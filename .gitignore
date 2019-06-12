@@ -1,3 +1,5 @@
 jamcraft3-game
 content/
 world/
+.dub/
+dub.selections.json
