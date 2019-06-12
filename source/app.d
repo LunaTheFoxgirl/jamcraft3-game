@@ -7,5 +7,6 @@ void main() {
     
     // Run the game
     DunesGame game = new DunesGame();
+    scope(exit) game.save();
     game.Run();
 }

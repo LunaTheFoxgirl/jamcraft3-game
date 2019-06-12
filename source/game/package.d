@@ -16,7 +16,7 @@ private:
 public:
     override void Init() {
         // Enable VSync
-        Window.VSync = VSyncState.Immidiate;
+        Window.VSync = VSyncState.VSync;
         Window.AllowResizing = true;
         Window.Title = "Dunes";
         gameImpl = this;
@@ -40,7 +40,11 @@ public:
     }
 
     override void Draw(GameTimes gameTime) {
-        Renderer.ClearColor(Color.Black);
+        Renderer.ClearColor(Color.CornflowerBlue);
         world.draw(sprite_batch);
+    }
+
+    void save() {
+        world.save();
     }
 }

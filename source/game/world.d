@@ -4,10 +4,12 @@ import game.chunk;
 import game.entity;
 import game.entities;
 import game;
+import game.utils;
 import polyplex;
 import containers.list;
+import msgpack;
 
-enum CHUNK_EXTENT = 4;
+enum CHUNK_EXTENT = 5;
 
 class World {
 private:
@@ -17,9 +19,10 @@ private:
     Entity[] entities;
 
     Rectangle effectiveViewport() {
+        
         return new Rectangle(
-            cast(int)((camera.Position.X)-(camera.Origin.X/camera.Zoom)),
-            cast(int)((camera.Position.Y)-(camera.Origin.Y/camera.Zoom)),
+            cast(int)((camera.Position.X)-(camera.Origin.X/camera.Zoom)),//-(camera.Origin.X/camera.Zoom)),
+            cast(int)((camera.Position.Y)-(camera.Origin.Y/camera.Zoom)),//-(camera.Origin.Y/camera.Zoom)),
             cast(int)(cast(float)WINDOW_BOUNDS.Width/camera.Zoom),
             cast(int)(cast(float)WINDOW_BOUNDS.Height/camera.Zoom)
         );
@@ -63,11 +66,48 @@ private:
         else return generator.generateChunk(position);
     }
 
+    void loadWorld() {
+        import std.file;
+        import std.path;
+        import std.format;
+        string path = buildPath("world", "world.wld");
+        if (!exists("world/")) mkdir("world/");
+        if (!exists(path)) return;
+        WorldSv ch = unpack!WorldSv(cast(ubyte[])read(path));
+        
+        player.position = ch.playerPosition;
+    }
+
+    void saveWorld() {
+    import std.file;
+        import std.path;
+
+        WorldSv saveInfo;
+        saveInfo.playerPosition = player.position;
+
+        if (!exists("world/")) mkdir("world/");
+        write(buildPath("world", "world.wld"), pack(saveInfo));
+    }
+
 public:
     Camera2D camera;
 
     this() {
 
+    }
+
+    Chunk opIndex(int x, int y) {
+        foreach(chunk; chunks) {
+            if (chunk.position.X == x && chunk.position.Y == y) return chunk;
+        }
+        return null;
+    }
+
+    Vector2i getBlockAtScreen(Vector2 mousePosition) {
+        Vector2i sBlockPos = Vector2i(cast(int)camera.Position.X-cast(int)camera.Origin.X, cast(int)camera.Position.Y-cast(int)camera.Origin.Y);
+        Vector2 mBlockPos = mousePosition;
+        Vector2i blockPos = Vector2i(sBlockPos.X+cast(int)mBlockPos.X, sBlockPos.Y+cast(int)mBlockPos.Y);
+        return blockPos.toBlockPos;
     }
 
     void init() {
@@ -76,6 +116,7 @@ public:
 
         player = new Player(this);
         updateChunks();
+        loadWorld();
     }
 
     void update(GameTimes gameTime) {
@@ -114,4 +155,18 @@ public:
         spriteBatch.End();
     }
 
+    void save() {
+        foreach(i; 0..chunks.count) {
+            if (i >= chunks.count) break;
+            if (chunks[i].modified) {
+                // TODO: Save chunk if changed
+                chunks[i].save();
+            }
+        }
+        this.saveWorld();
+    }
+}
+
+struct WorldSv {
+    Vector2 playerPosition;
 }

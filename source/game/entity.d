@@ -2,6 +2,7 @@ module game.entity;
 public import game.world;
 public import game.block;
 public import game.chunk;
+public import engine.cman;
 import polyplex;
 
 /++
