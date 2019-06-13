@@ -17,4 +17,10 @@ recipe name="Main" {
 
 recipe name="Blocks" {
     texture "blocks/block_sand.png" type="png" 
+    texture "blocks/block_hardsand.png" type="png" 
+    texture "blocks/block_coal.png" type="png" 
+}
+
+recipe name="Entities" {
+    texture "entities/entity_player.png" type="png" 
 }

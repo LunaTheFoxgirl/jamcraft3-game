@@ -21,6 +21,7 @@ public:
         enum H_HEIGHT_FACTOR = 8;
         enum H_HEIGHT_LIMIT = (CHUNK_SIZE*H_HEIGHT_FACTOR);
         enum H_SMOOTH_FACTOR = 120;
+        enum HARDSAND_START = 64;
 
         Chunk chunk = new Chunk();
         chunk.position = position;
@@ -49,10 +50,19 @@ public:
                         double py = (cast(double)(position.Y*CHUNK_SIZE)/10)+(cast(double)y/10);
 
                         if (ngen.noise2D(px, py) > 0.5) {
-                            chunk.walls[i][y] = new Block(Vector2i(i, y), "sand", chunk);
+                            if ((position.Y*CHUNK_SIZE)+y >= height+HARDSAND_START) {
+                                chunk.walls[i][y] = new Block(Vector2i(i, y), "hardsand", chunk);
+                            } else {
+                                chunk.walls[i][y] = new Block(Vector2i(i, y), "sand", chunk);
+                            }
                         } else {
-                            chunk.blocks[i][y] = new Block(Vector2i(i, y), "sand", chunk);
-                            chunk.walls[i][y] = new Block(Vector2i(i, y), "sand", chunk);
+                            if ((position.Y*CHUNK_SIZE)+y >= height+HARDSAND_START) {
+                                chunk.blocks[i][y] = new Block(Vector2i(i, y), "hardsand", chunk);
+                                chunk.walls[i][y] = new Block(Vector2i(i, y), "hardsand", chunk);
+                            } else {
+                                chunk.blocks[i][y] = new Block(Vector2i(i, y), "sand", chunk);
+                                chunk.walls[i][y] = new Block(Vector2i(i, y), "sand", chunk);
+                            }
                         }
                     }
                 }
@@ -61,6 +71,25 @@ public:
 
         if (position.Y > H_HEIGHT_FACTOR) {
             foreach(x; 0..CHUNK_SIZE) {
+                double heightNoise = ngen.noise2D(
+                    (cast(double)
+                        (position.X*CHUNK_SIZE)/(H_SMOOTH_FACTOR/4))+
+                        (cast(double)x/(H_SMOOTH_FACTOR/4)), 
+                    245);
+                double ugHeightNoise = ngen.noise2D(
+                    (cast(double)
+                        (position.X*CHUNK_SIZE)/(H_SMOOTH_FACTOR/8))+
+                        (cast(double)x/(H_SMOOTH_FACTOR/8)), 
+                    245);
+
+                int height = cast(int)((
+                    ((ngen.noise2D(
+                        (cast(double)
+                            (position.X*CHUNK_SIZE)/H_SMOOTH_FACTOR)+
+                            (cast(double)x/H_SMOOTH_FACTOR), 
+                            1)*heightNoise*ugHeightNoise))
+                    ) * cast(float)H_HEIGHT_LIMIT);
+
                 foreach(y; 0..CHUNK_SIZE) {
                     double px = (cast(double)(position.X*CHUNK_SIZE)/10)+(cast(double)x/10);
                     double py = (cast(double)(position.Y*CHUNK_SIZE)/10)+(cast(double)y/10);
@@ -68,9 +97,17 @@ public:
                     double py2 = (cast(double)(position.Y*CHUNK_SIZE)/30)+(cast(double)y/30);
 
                     if ((ngen.noise2D(px2, py2)*ngen.noise2D(px, py)) < 0.1 || ngen.noise2D(px2, py2) < 0.1) {
-                        chunk.blocks[x][y] = new Block(Vector2i(x, y), "sand", chunk);
+                        if ((position.Y*CHUNK_SIZE)+y >= height+HARDSAND_START) {
+                            chunk.blocks[x][y] = new Block(Vector2i(x, y), "hardsand", chunk);
+                        } else {
+                            chunk.blocks[x][y] = new Block(Vector2i(x, y), "sand", chunk);
+                        }
                     }
-                    chunk.walls[x][y] = new Block(Vector2i(x, y), "sand", chunk);
+                    if ((position.Y*CHUNK_SIZE)+y >= height+HARDSAND_START) {
+                        chunk.walls[x][y] = new Block(Vector2i(x, y), "hardsand", chunk);
+                    } else {
+                        chunk.walls[x][y] = new Block(Vector2i(x, y), "sand", chunk);
+                    }
                 }
             }
         }

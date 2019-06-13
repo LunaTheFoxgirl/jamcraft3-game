@@ -103,6 +103,20 @@ public:
         return null;
     }
 
+    Block blockAt(Vector2i position) {
+        Vector2i blockPos = position.wrapBlockPos;
+        Vector2i chunkPos = position.blockPosToChunkPos;
+        if (this[chunkPos.X, chunkPos.Y] is null) return null;
+        return this[chunkPos.X, chunkPos.Y].blocks[blockPos.X][blockPos.Y];
+    }
+
+    Block wallAt(Vector2i position) {
+        Vector2i blockPos = position.wrapBlockPos;
+        Vector2i chunkPos = position.blockPosToChunkPos;
+        if (this[chunkPos.X, chunkPos.Y] is null) return null;
+        return this[chunkPos.X, chunkPos.Y].walls[blockPos.X][blockPos.Y];
+    }
+
     Vector2i getBlockAtScreen(Vector2 mousePosition) {
         Vector2i sBlockPos = Vector2i(cast(int)camera.Position.X-cast(int)camera.Origin.X, cast(int)camera.Position.Y-cast(int)camera.Origin.Y);
         Vector2 mBlockPos = mousePosition;

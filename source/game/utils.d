@@ -26,3 +26,13 @@ T blockPosToChunkPos(T)(T vec) if (IsVector!T) {
 T toChunkPos(T)(T vec) if (IsVector!T) {
     return vec.toBlockPos.blockPosToChunkPos;
 }
+
+T[] getAdjacent(T)(T pos, int sx, int sy) if (IsVector!T) {
+    T[] adjacent;
+    foreach(x; 0..sx) {
+        foreach(y; 0..sy) {
+            adjacent ~= T(pos.X+(x-(sx/2)), pos.Y+(y-(sy/2)));
+        }
+    }
+    return adjacent;
+}
