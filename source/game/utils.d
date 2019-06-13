@@ -11,16 +11,21 @@ T wrapBlockPos(T)(T vec) if (IsVector!T) {
 }
 
 Vector2 vec2f(T)(T vec) if (IsVector!T) {
-    return Vector2(cast(int)vec.X, cast(int)vec.Y);
+    return Vector2(cast(float)vec.X, cast(float)vec.Y);
 }
 
-T toBlockPos(T)(T vec) if (IsVector!T) {
-    return T(vec.X/BLOCK_SIZE, vec.Y/BLOCK_SIZE);
+Vector2i toBlockPos(T)(T vec) if (IsVector!T) {
+    float c = cast(float)BLOCK_SIZE;
+    int bx = cast(int)Mathf.Floor(cast(float)vec.X/c);
+    int by = cast(int)Mathf.Floor(cast(float)vec.Y/c);
+    return Vector2i(bx, by);
 }
 
-T blockPosToChunkPos(T)(T vec) if (IsVector!T) {
-    T calc = T((vec.X < 0 ? vec.X+1 : vec.X)/CHUNK_SIZE, (vec.Y < 0 ? vec.Y+1 : vec.Y)/CHUNK_SIZE);
-    return T((vec.X < 0 ? calc.X-1 : calc.X), (vec.Y < 0 ? calc.Y-1 : calc.Y));
+Vector2i blockPosToChunkPos(T)(T vec) if (IsVector!T) {
+    float c = cast(float)CHUNK_SIZE;
+    int bx = cast(int)Mathf.Floor(cast(float)vec.X/c);
+    int by = cast(int)Mathf.Floor(cast(float)vec.Y/c);
+    return Vector2i(bx, by);
 }
 
 T toChunkPos(T)(T vec) if (IsVector!T) {
