@@ -18,7 +18,7 @@ recipe name="Main" {
 recipe name="Tiles" {
     texture "tiles/tile_sand.png" type="png" 
     texture "tiles/tile_sandstone.png" type="png" 
-    texture "tiles/overlays/tile_coal.png" type="png" 
+    texture "tiles/tile_coal.png" type="png" 
 }
 
 recipe name="Entities" {

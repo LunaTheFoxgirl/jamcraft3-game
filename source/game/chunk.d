@@ -54,6 +54,18 @@ public:
         }
     }
 
+    void placeTile(T)(T tile, Vector2i at) {
+        this.tiles[at.X][at.Y] = tile;
+        this.tiles[at.X][at.Y].onInit(at, this);
+        this.modified = true;
+    }
+
+    void placeWall(T)(T tile, Vector2i at) {
+        this.walls[at.X][at.Y] = tile;
+        this.walls[at.X][at.Y].onInit(at, this);
+        this.modified = true;
+    }
+
     void update() {
 
     }

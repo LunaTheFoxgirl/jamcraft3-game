@@ -166,8 +166,7 @@ public:
             if (chunk !is null) {
                 if (chunk.tiles[blockPos.X][blockPos.Y] !is null) {
                     Logger.Info("Destroy! @ {0} in {1}", blockPos, chunk.position);
-                    chunk.tiles[blockPos.X][blockPos.Y] = null;
-                    chunk.modified = true;
+                    chunk.tiles[blockPos.X][blockPos.Y].attackTile(1, false);
                 }
             }
         }
@@ -175,16 +174,10 @@ public:
         if (Mouse.GetState().IsButtonPressed(MouseButton.Left)) {
             Chunk chunk = world[chunkAtScreen.X, chunkAtScreen.Y];
             Vector2i blockPos = tileAtScreen.wrapTilePos;
-            if (chunk !is null) {
-                Logger.Info("Place! @ {0} in {1}", blockPos, chunk.position);
-                if (chunk.tiles[blockPos.X][blockPos.Y] is null) {
-                    chunk.tiles[blockPos.X][blockPos.Y] = new SandTile(blockPos, chunk);
-                    chunk.modified = true;
-                }
-            }
+            chunk.placeTile(new SandTile(), blockPos);
         }
         world.camera.Position = this.hitbox.Center;
-        world.camera.Zoom = 1f; //2f;
+        world.camera.Zoom = 1.5f;
     }
 
     override void draw(SpriteBatch spriteBatch) {

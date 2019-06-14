@@ -19,7 +19,6 @@ private:
     Entity[] entities;
 
     Rectangle effectiveViewport() {
-        
         return new Rectangle(
             cast(int)((camera.Position.X)-(camera.Origin.X/camera.Zoom)),//-(camera.Origin.X/camera.Zoom)),
             cast(int)((camera.Position.Y)-(camera.Origin.Y/camera.Zoom)),//-(camera.Origin.Y/camera.Zoom)),
@@ -118,8 +117,10 @@ public:
     }
 
     Vector2i getTileAtScreen(Vector2 mousePosition) {
-        Vector2i sTilePos = Vector2i(cast(int)camera.Position.X-cast(int)camera.Origin.X, cast(int)camera.Position.Y-cast(int)camera.Origin.Y);
-        Vector2 mTilePos = mousePosition;
+        float px = (camera.Position.X-(camera.Origin.X/camera.Zoom));
+        float py = (camera.Position.Y-(camera.Origin.Y/camera.Zoom));
+        Vector2i sTilePos = Vector2i(cast(int)px, cast(int)py);
+        Vector2 mTilePos = mousePosition/camera.Zoom;
         Vector2i tilePos = Vector2i(sTilePos.X+cast(int)mTilePos.X, sTilePos.Y+cast(int)mTilePos.Y);
         return tilePos.toTilePos;
     }

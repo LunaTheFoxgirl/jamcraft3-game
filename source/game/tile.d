@@ -29,7 +29,7 @@ protected:
     @nonPacked
     string tileId;
 
-    final setTexture(string name) {
+    final void setTexture(string name) {
         this.texture = TEXTURES["tiles/tile_%s".format(name)];
     }
 
@@ -59,6 +59,15 @@ protected:
     void onLoading(ref Unpacker unpacker) { }
 
 public:
+    string getId() {
+        return tileId;
+    }
+
+    @nonPacked
+    int health;
+
+    @nonPacked
+    int strength;
 
     /// Position of tile in chunk
     @nonPacked
@@ -72,13 +81,32 @@ public:
     @nonPacked
     Rectangle renderbox;
 
+    this() {
+        this("INVALID_TILE");
+    }
+
     this(string tileId) {
         this.tileId = tileId;
     }
 
     this(string tileId, Vector2i position, Chunk chunk = null) {
-        this.tileId = tileId;
+        this(tileId);
         onInit(position, chunk);
+    }
+
+    void attackTile(int digPower, bool wall = false) {
+        if (digPower < strength) return;
+        health -= digPower;
+        if (health <= 0) breakTile(wall);
+    }
+
+    void breakTile(bool wall = false) {
+        this.onDestroy();
+        if (!wall) {
+            chunk.tiles[position.X][position.Y] = null;
+            return;
+        } 
+        chunk.walls[position.X][position.Y] = null;
     }
 
     @nonPacked
@@ -115,8 +143,11 @@ void handlePackingTile(T)(ref Packer packer, ref T tile) {
 void handleUnpackingTile(T)(ref Unpacker unpacker, ref T tile) {
     string key;
     string tid;
+    
+    /// Main
     unpacker.unpackMap(key, tid);
     tile = cast(T)TileRegistry.createNew(tid);
+
     tile.onLoading(unpacker);
 }
 

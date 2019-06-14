@@ -43,6 +43,7 @@ public:
                             (cast(double)i/H_SMOOTH_FACTOR), 
                             1)*heightNoise))
                     ) * cast(float)H_HEIGHT_LIMIT);
+
                 foreach(y; 0..CHUNK_SIZE) {
                     if ((position.Y*CHUNK_SIZE)+y >= height) {
 
@@ -96,9 +97,17 @@ public:
                     double px2 = (cast(double)(position.X*CHUNK_SIZE)/30)+(cast(double)x/30);
                     double py2 = (cast(double)(position.Y*CHUNK_SIZE)/30)+(cast(double)y/30);
 
+                    double pxCoal = (cast(double)(position.X*CHUNK_SIZE)/5)+(cast(double)x/5);
+                    double pyCoal = (cast(double)(position.Y*CHUNK_SIZE)/5)+(cast(double)y/5);
+
                     if ((ngen.noise2D(px2, py2)*ngen.noise2D(px, py)) < 0.1 || ngen.noise2D(px2, py2) < 0.1) {
                         if ((position.Y*CHUNK_SIZE)+y >= height+HARDSAND_START) {
-                            chunk.tiles[x][y] = new SandstoneTile(Vector2i(x, y), chunk);
+                            Tile overlay = null;
+                            if (ngen.noise2D(pxCoal, pyCoal)*ngen.noise2D(px, py) > 0.1) {
+                                chunk.tiles[x][y] = new CoalTile(Vector2i(x, y), chunk); //overlay = new CoalTile();
+                            } else {
+                                chunk.tiles[x][y] = new SandstoneTile(Vector2i(x, y), chunk);
+                            }
                         } else {
                             chunk.tiles[x][y] = new SandTile(Vector2i(x, y), chunk);
                         }
