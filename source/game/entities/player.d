@@ -4,9 +4,9 @@ import game.utils;
 import game.tiles;
 import polyplex;
 
-enum PLAYER_SPEED = 1.4f;
-enum PLAYER_JUMP_SPEED = 3.5f;
-enum GRAVITY_CONST = 2.5f;
+enum PLAYER_SPEED = 1.8f;
+enum PLAYER_JUMP_SPEED = 1f;
+enum GRAVITY_CONST = 1.5f;
 enum MAX_SPEED = 14f;
 enum DRAG_CONST = 0.7f;
 enum JUMP_TIMER_START = 10;
@@ -25,6 +25,8 @@ private:
     KeyboardState state;
     Vector2i chunkAtScreen;
     Vector2i tileAtScreen;
+
+    int pickPower = 1;
 
     Vector2 feet() {
         return Vector2(
@@ -50,26 +52,6 @@ private:
         return Vector2i(cast(int)(feet.X+offset.X), cast(int)(feet.Y+offset.Y)).toTilePos;
     }
 
-    float calculateAABBCollissionX(Rectangle a, Rectangle b) {
-        if (a.Intersects(b) || b.Intersects(a)) {
-            if (a.Center.X < b.Center.X) {
-                return cast(float)(b.Left-a.Right);
-            }
-            return cast(float)(b.Right-a.Left);
-        }
-        return 0.0f;
-    }
-
-    float calculateAABBCollissionY(Rectangle a, Rectangle b) {
-        if (a.Intersects(b) || b.Intersects(a)) {
-            if (a.Center.Y < b.Center.Y) {
-                return cast(float)(b.Top-a.Bottom)/4f;
-            }
-            return cast(float)(b.Bottom-a.Top);
-        }
-        return 0.0f;
-    }
-
     void handlePhysics() {
         limitMomentum();
         float v;
@@ -89,7 +71,12 @@ private:
             }
         }
 
-        motion.Y += GRAVITY_CONST;
+        if (jumpTimer <= 0) {
+            motion.Y += GRAVITY_CONST;
+        } else {
+            this.motion.Y -= Mathf.Lerp(0, PLAYER_JUMP_SPEED, (1f-(jumpTimer/JUMP_TIMER_START)));
+            jumpTimer--;
+        }
         position.Y += motion.Y;
         grounded = false;
         foreach(adjacent; centerTile.getAdjacent(12, 12)) {
@@ -125,17 +112,50 @@ private:
 
         if (state.IsKeyDown(Keys.Space) && grounded) {
             if (jumpTimer == 0) {
-                Logger.Info("JUMP!");
                 jumpTimer = JUMP_TIMER_START;
             }
         }
 
-        if (jumpTimer > 0) {
-            this.motion.Y -= PLAYER_JUMP_SPEED*(1f-(jumpTimer/JUMP_TIMER_START));
-            jumpTimer--;
+        handlePhysics();
+    }
+
+    void attackBlock(Vector2i at, bool wall) {
+        chunkAtScreen = at.tilePosToChunkPos;
+        Chunk chunk = world[chunkAtScreen.X, chunkAtScreen.Y];
+        Vector2i mBlockPos = at.wrapTilePos;
+
+        Vector2i tilePos = Vector2i(cast(int)mBlockPos.X, cast(int)mBlockPos.Y);
+        if (chunk !is null) {
+            chunk.attackTile(tilePos, pickPower, wall);
+        }
+    }
+
+    void placeTile(T)(T tile, Vector2i at, bool isWall) {
+        chunkAtScreen = at.tilePosToChunkPos;
+        Chunk chunk = world[chunkAtScreen.X, chunkAtScreen.Y];
+        Vector2i tilePos = at.wrapTilePos;
+        if (isWall) {
+            chunk.placeWall(tile, tilePos, pickPower*2);
+            return;
+        }
+        Vector2i px = at.toPixels;
+        Rectangle tileBounds = getDefaultHB(px);
+        if (tileBounds.Intersects(this.hitbox)) return;
+        chunk.placeTile(tile, tilePos, pickPower*2);
+    }
+
+    void handleInteraction() {
+        tileAtScreen = world.getTileAtScreen(Mouse.Position);
+
+        bool wall = state.IsKeyDown(Keys.LeftShift);
+
+        if (Mouse.GetState().IsButtonPressed(MouseButton.Right)) {
+            placeTile(new SandTile(), tileAtScreen, wall);
         }
 
-        handlePhysics();
+        if (Mouse.GetState().IsButtonPressed(MouseButton.Left)) {
+            attackBlock(tileAtScreen, wall);
+        }
     }
 
 public:
@@ -144,7 +164,7 @@ public:
     }
 
     override Rectangle hitbox() {
-        return new Rectangle(cast(int)position.X+8, cast(int)position.Y+8, 32-12, 64-8);
+        return new Rectangle(cast(int)position.X+8, cast(int)position.Y+8, 16, 64-8);
     }
 
     Rectangle renderbox() {
@@ -152,30 +172,10 @@ public:
     }
 
     override void update(GameTimes gameTime) {
-        tileAtScreen = world.getTileAtScreen(Mouse.Position);
-        chunkAtScreen = tileAtScreen.tilePosToChunkPos;
         state = Keyboard.GetState();
 
         handleMovement();
-
-        if (Mouse.GetState().IsButtonPressed(MouseButton.Right)) {
-            Chunk chunk = world[chunkAtScreen.X, chunkAtScreen.Y];
-            Vector2i mBlockPos = tileAtScreen.wrapTilePos;
-
-            Vector2i blockPos = Vector2i(cast(int)mBlockPos.X, cast(int)mBlockPos.Y);
-            if (chunk !is null) {
-                if (chunk.tiles[blockPos.X][blockPos.Y] !is null) {
-                    Logger.Info("Destroy! @ {0} in {1}", blockPos, chunk.position);
-                    chunk.tiles[blockPos.X][blockPos.Y].attackTile(1, false);
-                }
-            }
-        }
-
-        if (Mouse.GetState().IsButtonPressed(MouseButton.Left)) {
-            Chunk chunk = world[chunkAtScreen.X, chunkAtScreen.Y];
-            Vector2i blockPos = tileAtScreen.wrapTilePos;
-            chunk.placeTile(new SandTile(), blockPos);
-        }
+        handleInteraction();
         world.camera.Position = this.hitbox.Center;
         world.camera.Zoom = 1.5f;
     }
@@ -185,6 +185,6 @@ public:
     }
 
     override void drawAfter(SpriteBatch spriteBatch) {
-        spriteBatch.Draw(TEXTURES["tiles/tile_sand"], new Rectangle(tileAtScreen.X*BLOCK_SIZE, tileAtScreen.Y*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE), TEXTURES["tiles/tile_sand"].Size, Color.Blue);
+        //spriteBatch.Draw(TEXTURES["tiles/tile_sand"], new Rectangle(tileAtScreen.X*BLOCK_SIZE, tileAtScreen.Y*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE), TEXTURES["tiles/tile_sand"].Size, Color.Blue);
     }
 }

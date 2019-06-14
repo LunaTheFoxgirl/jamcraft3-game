@@ -9,8 +9,21 @@ import std.path;
 
 enum CHUNK_SIZE = 16;
 
+enum CHUNK_SIZE_PIXELS = BLOCK_SIZE*CHUNK_SIZE;
+
 class Chunk {
+private:
+    Rectangle hitbox;
+
 public:
+    void updateHitbox() {
+        hitbox = new Rectangle(position.X*CHUNK_SIZE_PIXELS, position.Y*CHUNK_SIZE_PIXELS, BLOCK_SIZE*CHUNK_SIZE_PIXELS, BLOCK_SIZE*CHUNK_SIZE_PIXELS);
+    }
+
+    Rectangle getHitbox() {
+        return hitbox;
+    }
+
     // The list of tiles
     Tile[CHUNK_SIZE][CHUNK_SIZE] tiles;
 
@@ -54,20 +67,47 @@ public:
         }
     }
 
-    void placeTile(T)(T tile, Vector2i at) {
+    bool attackTile(Vector2i at, int digPower, bool wall) {
+        if (!wall) {
+            if (this.tiles[at.X][at.Y] !is null) {
+                this.tiles[at.X][at.Y].attackTile(digPower, wall);
+                return true;
+            }
+        } else {
+            if (this.walls[at.X][at.Y] !is null) {
+                this.walls[at.X][at.Y].attackTile(digPower, wall);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool placeTile(T)(T tile, Vector2i at, int healAmount = 10) {
+        if (this.tiles[at.X][at.Y] !is null) {
+            this.tiles[at.X][at.Y].healDamage(healAmount);
+            return false;
+        }
         this.tiles[at.X][at.Y] = tile;
         this.tiles[at.X][at.Y].onInit(at, this);
         this.modified = true;
+        return true;
     }
 
-    void placeWall(T)(T tile, Vector2i at) {
+    bool placeWall(T)(T tile, Vector2i at, int healAmount = 10) {
+        if (this.tiles[at.X][at.Y] !is null) {
+            this.tiles[at.X][at.Y].healDamage(healAmount);
+            return false;
+        }
         this.walls[at.X][at.Y] = tile;
         this.walls[at.X][at.Y].onInit(at, this);
         this.modified = true;
+        return true;
     }
 
     void update() {
-
+        if (hitbox is null) {
+            updateHitbox();
+        }
     }
 
     void save() {

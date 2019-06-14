@@ -9,7 +9,8 @@ import polyplex;
 import containers.list;
 import msgpack;
 
-enum CHUNK_EXTENT = 5;
+enum CHUNK_EXTENT_X = 6;
+enum CHUNK_EXTENT_Y = 5;
 
 class World {
 private:
@@ -19,11 +20,25 @@ private:
     Entity[] entities;
 
     Rectangle effectiveViewport() {
+        float px = (camera.Position.X-(camera.Origin.X/camera.Zoom));
+        float py = (camera.Position.Y-(camera.Origin.Y/camera.Zoom));
         return new Rectangle(
-            cast(int)((camera.Position.X)-(camera.Origin.X/camera.Zoom)),//-(camera.Origin.X/camera.Zoom)),
-            cast(int)((camera.Position.Y)-(camera.Origin.Y/camera.Zoom)),//-(camera.Origin.Y/camera.Zoom)),
+            cast(int)(px),
+            cast(int)(py),
             cast(int)(cast(float)WINDOW_BOUNDS.Width/camera.Zoom),
             cast(int)(cast(float)WINDOW_BOUNDS.Height/camera.Zoom)
+        );
+    }
+
+    Rectangle effectiveViewportRenderbounds() {
+        float px = (camera.Position.X-(camera.Origin.X/camera.Zoom));
+        float py = (camera.Position.Y-(camera.Origin.Y/camera.Zoom));
+        float ps = ((BLOCK_SIZE*2)*camera.Zoom)*2;
+        return new Rectangle(
+            cast(int)(px-ps),
+            cast(int)(py-ps),
+            cast(int)(cast(float)WINDOW_BOUNDS.Width/camera.Zoom)+cast(int)ps,
+            cast(int)(cast(float)WINDOW_BOUNDS.Height/camera.Zoom)+cast(int)ps
         );
     }
 
@@ -46,9 +61,9 @@ private:
             }
         }
 
-        foreach(y; 0..CHUNK_EXTENT*2) {
-            mfr: foreach(x; 0..CHUNK_EXTENT*2) {
-                Vector2i actualPosition = player.chunkPosition()+Vector2i(x-(CHUNK_EXTENT/2)-2, y-(CHUNK_EXTENT/2));
+        foreach(y; 0..CHUNK_EXTENT_Y*2) {
+            mfr: foreach(x; 0..CHUNK_EXTENT_X*2) {
+                Vector2i actualPosition = player.chunkPosition()+Vector2i(x-(CHUNK_EXTENT_X/2)-2, y-(CHUNK_EXTENT_Y/2));
                 
                 foreach(chunk; chunks) { 
                     if (chunk.position == actualPosition) continue mfr;
@@ -152,9 +167,11 @@ public:
     void draw(SpriteBatch spriteBatch) {
         spriteBatch.Begin(SpriteSorting.Deferred, Blending.NonPremultiplied, Sampling.PointClamp, RasterizerState.Default, null, camera);
 
-            Rectangle eff = effectiveViewport;
+            Rectangle efView = effectiveViewportRenderbounds;
             foreach(chunk; chunks) {
-                chunk.drawWalls(spriteBatch, eff);
+                if (chunk.getHitbox is null) continue;
+                if (!chunk.getHitbox.Intersects(efView)) continue; 
+                chunk.drawWalls(spriteBatch, efView);
             }
 
             player.draw(spriteBatch);
@@ -164,7 +181,9 @@ public:
             }
 
             foreach(chunk; chunks) {
-                chunk.draw(spriteBatch, eff);
+                if (chunk.getHitbox is null) continue;
+                if (!chunk.getHitbox.Intersects(efView)) continue; 
+                chunk.draw(spriteBatch, efView);
             }
 
             foreach(entity; entities) {

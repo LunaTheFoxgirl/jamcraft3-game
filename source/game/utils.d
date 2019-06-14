@@ -14,6 +14,13 @@ Vector2 vec2f(T)(T vec) if (IsVector!T) {
     return Vector2(cast(float)vec.X, cast(float)vec.Y);
 }
 
+Vector2i toPixels(T)(T vec) if (IsVector!T) {
+    float c = cast(float)BLOCK_SIZE;
+    int bx = cast(int)Mathf.Floor(cast(float)vec.X*c);
+    int by = cast(int)Mathf.Floor(cast(float)vec.Y*c);
+    return Vector2i(bx, by);
+}
+
 Vector2i toTilePos(T)(T vec) if (IsVector!T) {
     float c = cast(float)BLOCK_SIZE;
     int bx = cast(int)Mathf.Floor(cast(float)vec.X/c);
@@ -40,4 +47,24 @@ T[] getAdjacent(T)(T pos, int sx, int sy) if (IsVector!T) {
         }
     }
     return adjacent;
+}
+
+float calculateAABBCollissionX(Rectangle a, Rectangle b) {
+    if (a.Intersects(b) || b.Intersects(a)) {
+        if (a.Center.X < b.Center.X) {
+            return cast(float)(b.Left-a.Right);
+        }
+        return cast(float)(b.Right-a.Left);
+    }
+    return 0.0f;
+}
+
+float calculateAABBCollissionY(Rectangle a, Rectangle b) {
+    if (a.Intersects(b) || b.Intersects(a)) {
+        if (a.Center.Y < b.Center.Y) {
+            return cast(float)(b.Top-a.Bottom)/4f;
+        }
+        return cast(float)(b.Bottom-a.Top);
+    }
+    return 0.0f;
 }

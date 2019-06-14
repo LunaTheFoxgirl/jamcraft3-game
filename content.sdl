@@ -21,6 +21,10 @@ recipe name="Tiles" {
     texture "tiles/tile_coal.png" type="png" 
 }
 
+recipe name="FX" {
+    texture "fx/fx_break.png" type="png"
+}
+
 recipe name="Entities" {
     texture "entities/entity_player.png" type="png" 
 }

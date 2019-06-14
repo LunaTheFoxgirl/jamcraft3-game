@@ -6,14 +6,16 @@ public:
     this() {
         super("sandstone");
         setTexture("sandstone");
-        this.strength = 10;
-        this.health = 20;
     }
 
     this(Vector2i position, Chunk chunk = null) {
         super("sandstone", position, chunk);
         setTexture("sandstone");
-        this.strength = 10;
-        this.health = 20;
+    }
+
+    override void onInit(Vector2i position, Chunk chunk) {
+        super.onInit(position, chunk);
+        setStrength(1);
+        setHealth(20);
     }
 }
