@@ -1,6 +1,9 @@
 module game;
 import polyplex;
 import engine.cman;
+import game.tiles;
+import game.tile;
+import game.chunk;
 import game.world;
 
 private __gshared static DunesGame gameImpl;
@@ -26,6 +29,10 @@ public:
         // Load content here with Content.Load!T
         // You can prefix the path in the Load function to load a raw file.
         setupManagers(Content);
+
+        registerTileIOFor!Tile();
+        registerChunkIO();
+        initRegistry();
 
         world = new World();
         world.init();

@@ -1,6 +1,6 @@
 module game.entity;
 public import game.world;
-public import game.block;
+public import game.tile;
 public import game.chunk;
 public import engine.cman;
 import polyplex;
@@ -36,4 +36,8 @@ public:
     abstract Rectangle hitbox();
     abstract void update(GameTimes gameTime);
     abstract void draw(SpriteBatch spriteBatch);
+
+    void drawAfter(SpriteBatch spriteBatch) {
+        
+    }
 }

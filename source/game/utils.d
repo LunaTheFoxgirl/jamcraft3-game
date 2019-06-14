@@ -1,9 +1,9 @@
 module game.utils;
 import polyplex.math;
 import game.chunk;
-import game.block;
+import game.tile;
 
-T wrapBlockPos(T)(T vec) if (IsVector!T) {
+T wrapTilePos(T)(T vec) if (IsVector!T) {
     T vecT = vec;
     return T(
         (vec.X < 0 ? CHUNK_SIZE-(vec.X*-1)%CHUNK_SIZE : vec.X)%CHUNK_SIZE, 
@@ -14,14 +14,14 @@ Vector2 vec2f(T)(T vec) if (IsVector!T) {
     return Vector2(cast(float)vec.X, cast(float)vec.Y);
 }
 
-Vector2i toBlockPos(T)(T vec) if (IsVector!T) {
+Vector2i toTilePos(T)(T vec) if (IsVector!T) {
     float c = cast(float)BLOCK_SIZE;
     int bx = cast(int)Mathf.Floor(cast(float)vec.X/c);
     int by = cast(int)Mathf.Floor(cast(float)vec.Y/c);
     return Vector2i(bx, by);
 }
 
-Vector2i blockPosToChunkPos(T)(T vec) if (IsVector!T) {
+Vector2i tilePosToChunkPos(T)(T vec) if (IsVector!T) {
     float c = cast(float)CHUNK_SIZE;
     int bx = cast(int)Mathf.Floor(cast(float)vec.X/c);
     int by = cast(int)Mathf.Floor(cast(float)vec.Y/c);
@@ -29,7 +29,7 @@ Vector2i blockPosToChunkPos(T)(T vec) if (IsVector!T) {
 }
 
 T toChunkPos(T)(T vec) if (IsVector!T) {
-    return vec.toBlockPos.blockPosToChunkPos;
+    return vec.toTilePos.tilePosToChunkPos;
 }
 
 T[] getAdjacent(T)(T pos, int sx, int sy) if (IsVector!T) {

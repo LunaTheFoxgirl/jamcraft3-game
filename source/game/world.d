@@ -42,7 +42,7 @@ private:
                     // TODO: Save chunk if changed
                     chunks[i].save();
                 }
-                Logger.Info("Removed chunk at {0}", chunks[i].position);
+                //Logger.Info("Removed chunk at {0}", chunks[i].position);
                 chunks.removeAt(i);
             }
         }
@@ -83,7 +83,7 @@ private:
         import std.path;
 
         WorldSv saveInfo;
-        saveInfo.playerPosition = player.position;
+        saveInfo.playerPosition = Vector2(Mathf.Floor(player.position.X), Mathf.Floor(player.position.Y)-4f);
 
         if (!exists("world/")) mkdir("world/");
         write(buildPath("world", "world.wld"), pack(saveInfo));
@@ -103,25 +103,25 @@ public:
         return null;
     }
 
-    Block blockAt(Vector2i position) {
-        Vector2i blockPos = position.wrapBlockPos;
-        Vector2i chunkPos = position.blockPosToChunkPos;
+    Tile tileAt(Vector2i position) {
+        Vector2i tilePos = position.wrapTilePos;
+        Vector2i chunkPos = position.tilePosToChunkPos;
         if (this[chunkPos.X, chunkPos.Y] is null) return null;
-        return this[chunkPos.X, chunkPos.Y].blocks[blockPos.X][blockPos.Y];
+        return this[chunkPos.X, chunkPos.Y].tiles[tilePos.X][tilePos.Y];
     }
 
-    Block wallAt(Vector2i position) {
-        Vector2i blockPos = position.wrapBlockPos;
-        Vector2i chunkPos = position.blockPosToChunkPos;
+    Tile wallAt(Vector2i position) {
+        Vector2i tilePos = position.wrapTilePos;
+        Vector2i chunkPos = position.tilePosToChunkPos;
         if (this[chunkPos.X, chunkPos.Y] is null) return null;
-        return this[chunkPos.X, chunkPos.Y].walls[blockPos.X][blockPos.Y];
+        return this[chunkPos.X, chunkPos.Y].walls[tilePos.X][tilePos.Y];
     }
 
-    Vector2i getBlockAtScreen(Vector2 mousePosition) {
-        Vector2i sBlockPos = Vector2i(cast(int)camera.Position.X-cast(int)camera.Origin.X, cast(int)camera.Position.Y-cast(int)camera.Origin.Y);
-        Vector2 mBlockPos = mousePosition;
-        Vector2i blockPos = Vector2i(sBlockPos.X+cast(int)mBlockPos.X, sBlockPos.Y+cast(int)mBlockPos.Y);
-        return blockPos.toBlockPos;
+    Vector2i getTileAtScreen(Vector2 mousePosition) {
+        Vector2i sTilePos = Vector2i(cast(int)camera.Position.X-cast(int)camera.Origin.X, cast(int)camera.Position.Y-cast(int)camera.Origin.Y);
+        Vector2 mTilePos = mousePosition;
+        Vector2i tilePos = Vector2i(sTilePos.X+cast(int)mTilePos.X, sTilePos.Y+cast(int)mTilePos.Y);
+        return tilePos.toTilePos;
     }
 
     void init() {
@@ -165,6 +165,12 @@ public:
             foreach(chunk; chunks) {
                 chunk.draw(spriteBatch, eff);
             }
+
+            foreach(entity; entities) {
+                entity.drawAfter(spriteBatch);
+            }
+
+            player.drawAfter(spriteBatch);
             
         spriteBatch.End();
     }

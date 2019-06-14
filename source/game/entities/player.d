@@ -1,10 +1,11 @@
 module game.entities.player;
 import game.entity;
 import game.utils;
+import game.tiles;
 import polyplex;
 
-enum PLAYER_SPEED = 2f;
-enum PLAYER_JUMP_SPEED = 15f;
+enum PLAYER_SPEED = 1.4f;
+enum PLAYER_JUMP_SPEED = 3.5f;
 enum GRAVITY_CONST = 2.5f;
 enum MAX_SPEED = 14f;
 enum DRAG_CONST = 0.7f;
@@ -23,7 +24,7 @@ private:
 
     KeyboardState state;
     Vector2i chunkAtScreen;
-    Vector2i blockAtScreen;
+    Vector2i tileAtScreen;
 
     Vector2 feet() {
         return Vector2(
@@ -46,7 +47,7 @@ private:
     }
 
     Vector2i feetBlock(Vector2 offset = Vector2(0, 0)) {
-        return Vector2i(cast(int)(feet.X+offset.X), cast(int)(feet.Y+offset.Y)).toBlockPos;
+        return Vector2i(cast(int)(feet.X+offset.X), cast(int)(feet.Y+offset.Y)).toTilePos;
     }
 
     float calculateAABBCollissionX(Rectangle a, Rectangle b) {
@@ -72,12 +73,12 @@ private:
     void handlePhysics() {
         limitMomentum();
         float v;
-        Vector2i centerBlock = Vector2i(cast(int)hitbox.Center.X, cast(int)hitbox.Center.Y).toBlockPos;
+        Vector2i centerTile = Vector2i(cast(int)hitbox.Center.X, cast(int)hitbox.Center.Y).toTilePos;
 
         position.X += motion.X;
         position.X = Mathf.Round(position.X);
-        col: foreach(adjacent; centerBlock.getAdjacent(12, 12)) {
-            Block b = world.blockAt(adjacent);
+        col: foreach(adjacent; centerTile.getAdjacent(12, 12)) {
+            Tile b = world.tileAt(adjacent);
             if (b !is null) {
                 Rectangle bAABB = b.hitbox;
                 v = calculateAABBCollissionX(this.hitbox, bAABB);
@@ -91,8 +92,8 @@ private:
         motion.Y += GRAVITY_CONST;
         position.Y += motion.Y;
         grounded = false;
-        foreach(adjacent; centerBlock.getAdjacent(12, 12)) {
-            Block b = world.blockAt(adjacent);
+        foreach(adjacent; centerTile.getAdjacent(12, 12)) {
+            Tile b = world.tileAt(adjacent);
             if (b !is null) {
                 Rectangle bAABB = b.hitbox;
                 v = calculateAABBCollissionY(this.hitbox, bAABB);
@@ -143,25 +144,29 @@ public:
     }
 
     override Rectangle hitbox() {
+        return new Rectangle(cast(int)position.X+8, cast(int)position.Y+8, 32-12, 64-8);
+    }
+
+    Rectangle renderbox() {
         return new Rectangle(cast(int)position.X, cast(int)position.Y, 32, 64);
     }
 
     override void update(GameTimes gameTime) {
-        blockAtScreen = world.getBlockAtScreen(Mouse.Position);
-        chunkAtScreen = blockAtScreen.blockPosToChunkPos;
+        tileAtScreen = world.getTileAtScreen(Mouse.Position);
+        chunkAtScreen = tileAtScreen.tilePosToChunkPos;
         state = Keyboard.GetState();
 
         handleMovement();
 
         if (Mouse.GetState().IsButtonPressed(MouseButton.Right)) {
             Chunk chunk = world[chunkAtScreen.X, chunkAtScreen.Y];
-            Vector2i mBlockPos = blockAtScreen.wrapBlockPos;
+            Vector2i mBlockPos = tileAtScreen.wrapTilePos;
 
             Vector2i blockPos = Vector2i(cast(int)mBlockPos.X, cast(int)mBlockPos.Y);
             if (chunk !is null) {
-                if (chunk.blocks[blockPos.X][blockPos.Y] !is null) {
+                if (chunk.tiles[blockPos.X][blockPos.Y] !is null) {
                     Logger.Info("Destroy! @ {0} in {1}", blockPos, chunk.position);
-                    chunk.blocks[blockPos.X][blockPos.Y] = null;
+                    chunk.tiles[blockPos.X][blockPos.Y] = null;
                     chunk.modified = true;
                 }
             }
@@ -169,11 +174,11 @@ public:
 
         if (Mouse.GetState().IsButtonPressed(MouseButton.Left)) {
             Chunk chunk = world[chunkAtScreen.X, chunkAtScreen.Y];
-            Vector2i blockPos = blockAtScreen.wrapBlockPos;
+            Vector2i blockPos = tileAtScreen.wrapTilePos;
             if (chunk !is null) {
                 Logger.Info("Place! @ {0} in {1}", blockPos, chunk.position);
-                if (chunk.blocks[blockPos.X][blockPos.Y] is null) {
-                    chunk.blocks[blockPos.X][blockPos.Y] = new Block(blockPos, "sand", chunk);
+                if (chunk.tiles[blockPos.X][blockPos.Y] is null) {
+                    chunk.tiles[blockPos.X][blockPos.Y] = new SandTile(blockPos, chunk);
                     chunk.modified = true;
                 }
             }
@@ -183,7 +188,10 @@ public:
     }
 
     override void draw(SpriteBatch spriteBatch) {
-        spriteBatch.Draw(TEXTURES["blocks/block_sand"], new Rectangle(blockAtScreen.X*BLOCK_SIZE, blockAtScreen.Y*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE), TEXTURES["blocks/block_sand"].Size, Color.Blue);
-        spriteBatch.Draw(TEXTURES["entities/entity_player"], this.hitbox, TEXTURES["entities/entity_player"].Size, Color.White, spriteFlip);
+        spriteBatch.Draw(TEXTURES["entities/entity_player"], this.renderbox, TEXTURES["entities/entity_player"].Size, Color.White, spriteFlip);
+    }
+
+    override void drawAfter(SpriteBatch spriteBatch) {
+        spriteBatch.Draw(TEXTURES["tiles/tile_sand"], new Rectangle(tileAtScreen.X*BLOCK_SIZE, tileAtScreen.Y*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE), TEXTURES["tiles/tile_sand"].Size, Color.Blue);
     }
 }

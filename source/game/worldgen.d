@@ -1,7 +1,7 @@
 module game.worldgen;
 import dosimplex.generator;
 import game.chunk;
-import game.block;
+import game.tiles;
 import polyplex;
 
 class WorldGenerator {
@@ -18,9 +18,9 @@ public:
         //     return GenerateFilled(position);
         // }
 
-        enum H_HEIGHT_FACTOR = 8;
+        enum H_HEIGHT_FACTOR = 6;
         enum H_HEIGHT_LIMIT = (CHUNK_SIZE*H_HEIGHT_FACTOR);
-        enum H_SMOOTH_FACTOR = 120;
+        enum H_SMOOTH_FACTOR = 256;
         enum HARDSAND_START = 64;
 
         Chunk chunk = new Chunk();
@@ -51,17 +51,17 @@ public:
 
                         if (ngen.noise2D(px, py) > 0.5) {
                             if ((position.Y*CHUNK_SIZE)+y >= height+HARDSAND_START) {
-                                chunk.walls[i][y] = new Block(Vector2i(i, y), "hardsand", chunk);
+                                chunk.walls[i][y] = new SandstoneTile(Vector2i(i, y), chunk);
                             } else {
-                                chunk.walls[i][y] = new Block(Vector2i(i, y), "sand", chunk);
+                                chunk.walls[i][y] = new SandTile(Vector2i(i, y), chunk);
                             }
                         } else {
                             if ((position.Y*CHUNK_SIZE)+y >= height+HARDSAND_START) {
-                                chunk.blocks[i][y] = new Block(Vector2i(i, y), "hardsand", chunk);
-                                chunk.walls[i][y] = new Block(Vector2i(i, y), "hardsand", chunk);
+                                chunk.tiles[i][y] = new SandstoneTile(Vector2i(i, y), chunk);
+                                chunk.walls[i][y] = new SandstoneTile(Vector2i(i, y), chunk);
                             } else {
-                                chunk.blocks[i][y] = new Block(Vector2i(i, y), "sand", chunk);
-                                chunk.walls[i][y] = new Block(Vector2i(i, y), "sand", chunk);
+                                chunk.tiles[i][y] = new SandTile(Vector2i(i, y), chunk);
+                                chunk.walls[i][y] = new SandTile(Vector2i(i, y), chunk);
                             }
                         }
                     }
@@ -98,15 +98,15 @@ public:
 
                     if ((ngen.noise2D(px2, py2)*ngen.noise2D(px, py)) < 0.1 || ngen.noise2D(px2, py2) < 0.1) {
                         if ((position.Y*CHUNK_SIZE)+y >= height+HARDSAND_START) {
-                            chunk.blocks[x][y] = new Block(Vector2i(x, y), "hardsand", chunk);
+                            chunk.tiles[x][y] = new SandstoneTile(Vector2i(x, y), chunk);
                         } else {
-                            chunk.blocks[x][y] = new Block(Vector2i(x, y), "sand", chunk);
+                            chunk.tiles[x][y] = new SandTile(Vector2i(x, y), chunk);
                         }
                     }
                     if ((position.Y*CHUNK_SIZE)+y >= height+HARDSAND_START) {
-                        chunk.walls[x][y] = new Block(Vector2i(x, y), "hardsand", chunk);
+                        chunk.walls[x][y] = new SandstoneTile(Vector2i(x, y), chunk);
                     } else {
-                        chunk.walls[x][y] = new Block(Vector2i(x, y), "sand", chunk);
+                        chunk.walls[x][y] = new SandTile(Vector2i(x, y), chunk);
                     }
                 }
             }

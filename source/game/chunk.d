@@ -1,18 +1,21 @@
 module game.chunk;
-import game.block;
 import polyplex;
 import std.format;
 import msgpack;
+import game.tiles;
+import std.base64;
+import std.file;
+import std.path;
 
 enum CHUNK_SIZE = 16;
 
 class Chunk {
 public:
-    // The list of blocks
-    Block[CHUNK_SIZE][CHUNK_SIZE] blocks;
+    // The list of tiles
+    Tile[CHUNK_SIZE][CHUNK_SIZE] tiles;
 
-    // The list of blocks
-    Block[CHUNK_SIZE][CHUNK_SIZE] walls;
+    // The list of tiles
+    Tile[CHUNK_SIZE][CHUNK_SIZE] walls;
 
     /// Position of the chunk
     Vector2i position;
@@ -30,7 +33,7 @@ public:
     bool invalidated;
 
     void draw(SpriteBatch spriteBatch, Rectangle viewport) {
-        foreach(row; blocks) {
+        foreach(row; tiles) {
             foreach(block; row) {
                 if (block is null) continue;
                 if (block.hitbox.Intersects(viewport)) {
@@ -60,22 +63,21 @@ public:
         import std.path;
 
         if (!exists("world/")) mkdir("world/");
-        write(buildPath("world", "%dx%d.chnk".format(position.X, position.Y)), pack(this));
+        write(buildPath("world", "%dx%d.chnk".format(position.X, position.Y)), pack!(true)(this));
     }
 }
 
 Chunk load(Vector2i position) {
-    import std.file;
-    import std.path;
-    import std.format;
     string path = buildPath("world", "%dx%d.chnk".format(position.X, position.Y));
     if (!exists("world/")) mkdir("world/");
     if (!exists(path)) return null;
-    Chunk ch = unpack!Chunk(cast(ubyte[])read(path));
+    ubyte[] txt = cast(ubyte[])read(path);
+
+    Chunk ch = unpack!(Chunk, true)(txt);
     foreach(x; 0..CHUNK_SIZE) {
         foreach(y; 0..CHUNK_SIZE) {
-            if (ch.blocks[x][y] !is null) ch.blocks[x][y].initBlock(Vector2i(x, y), ch);
-            if (ch.walls[x][y] !is null) ch.walls[x][y].initBlock(Vector2i(x, y), ch);
+            if (ch.tiles[x][y] !is null) ch.tiles[x][y].onInit(Vector2i(x, y), ch);
+            if (ch.walls[x][y] !is null) ch.walls[x][y].onInit(Vector2i(x, y), ch);
         }
     }
     return ch;
@@ -96,9 +98,64 @@ Chunk GenerateFilled(Vector2i position, string type = "sand") {
     output.modified = false;
     foreach(y; 0..CHUNK_SIZE) {
         foreach(x; 0..CHUNK_SIZE) {
-            output.blocks[x][y] = new Block(Vector2i(x, y), "sand", output);
-            output.walls[x][y] = new Block(Vector2i(x, y), "sand", output);
+            output.tiles[x][y] = new SandTile(Vector2i(x, y), output);
+            output.walls[x][y] = new SandTile(Vector2i(x, y), output);
         }
     }
     return output;
+}
+
+void handlePackingChunk(ref Packer packer, ref Chunk chunk) {
+    packer.beginMap(3).pack("tiles");
+    packer.beginArray(CHUNK_SIZE);
+    foreach(row; chunk.tiles) {
+        packer.beginArray(CHUNK_SIZE);
+        foreach(block; row) {
+            packer.pack(block);
+        }
+    }
+
+    packer.pack("walls");
+    packer.beginArray(CHUNK_SIZE);
+    foreach(row; chunk.walls) {
+        packer.beginArray(CHUNK_SIZE);
+        foreach(block; row) {
+            packer.pack(block);
+        }
+    }
+
+    packer.pack("position");
+    packer.pack(chunk.position);
+}
+
+void handleUnpackingChunk(ref Unpacker unpacker, ref Chunk chunk) {
+    unpacker.beginMap();
+    string key;
+    
+
+    unpacker.unpack(key);
+    unpacker.beginArray();
+    foreach(x; 0..CHUNK_SIZE) {
+        unpacker.beginArray();
+        foreach(y; 0..CHUNK_SIZE) {
+            unpacker.unpack(chunk.tiles[x][y]);
+        }
+    }
+    
+    unpacker.unpack(key);
+    unpacker.beginArray();
+    foreach(x; 0..CHUNK_SIZE) {
+        unpacker.beginArray();
+        foreach(y; 0..CHUNK_SIZE) {
+            unpacker.unpack(chunk.walls[x][y]);
+        }
+    }
+
+    unpacker.unpack(key);
+    unpacker.unpack!Vector2i(chunk.position);
+}
+
+void registerChunkIO() {
+    registerPackHandler!(Chunk, handlePackingChunk);
+    registerUnpackHandler!(Chunk, handleUnpackingChunk);
 }

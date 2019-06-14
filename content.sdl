@@ -15,10 +15,10 @@ recipe name="Main" {
     // Insert recipe items here.    
 }
 
-recipe name="Blocks" {
-    texture "blocks/block_sand.png" type="png" 
-    texture "blocks/block_hardsand.png" type="png" 
-    texture "blocks/block_coal.png" type="png" 
+recipe name="Tiles" {
+    texture "tiles/tile_sand.png" type="png" 
+    texture "tiles/tile_sandstone.png" type="png" 
+    texture "tiles/overlays/tile_coal.png" type="png" 
 }
 
 recipe name="Entities" {
