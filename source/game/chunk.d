@@ -20,15 +20,12 @@ private:
 
     @nonPacked
     World world;
-
-    @nonPacked
-    ShadowMap shadowMap;
 public:
     ~this() {
     }
 
     this() {
-        shadowMap = new ShadowMap();
+        shadowMap = new ShadowMap!(CHUNK_SHADOW_SIZE, CHUNK_SHADOW_SIZE)();
     }
 
     this(World world) {
@@ -61,9 +58,9 @@ public:
     @nonPacked
     bool modified;
 
-    /// Wether the chunk has been invalidated (marked for removal)
+    /// The shadow mapping associated with the chunk
     @nonPacked
-    bool invalidated;
+    ShadowMap!(CHUNK_SHADOW_SIZE, CHUNK_SHADOW_SIZE) shadowMap;
 
     void draw(SpriteBatch spriteBatch, Rectangle viewport) {
         foreach(row; tiles) {
@@ -88,7 +85,7 @@ public:
     }
 
     void drawShadowMap(SpriteBatch spriteBatch) {
-        
+        shadowMap.render(spriteBatch, this.getHitbox);
     }
 
     bool useTile(Vector2i at) {
@@ -113,7 +110,13 @@ public:
         return false;
     }
 
+    void updateLighting() {
+        world.getLighting.notifyUpdate(position);
+    }
+
     bool placeTile(T)(T tile, Vector2i at, int healAmount = 10) {
+        if (!at.withinChunkBounds) return false;
+        if (this is null) return false;
         if (this.tiles[at.X][at.Y] !is null) {
             this.tiles[at.X][at.Y].healDamage(healAmount);
             return false;
@@ -122,10 +125,13 @@ public:
         this.tiles[at.X][at.Y].onInit(at, this);
         this.tiles[at.X][at.Y].playInitAnimation();
         this.modified = true;
+        updateLighting();
         return true;
     }
 
     bool placeWall(T)(T tile, Vector2i at, int healAmount = 10) {
+        if (!at.withinChunkBounds) return false;
+        if (this is null) return false;
         if (this.walls[at.X][at.Y] !is null) {
             this.walls[at.X][at.Y].healDamage(healAmount);
             return false;
@@ -134,6 +140,7 @@ public:
         this.walls[at.X][at.Y].onInit(at, this);
         this.walls[at.X][at.Y].playInitAnimation();
         this.modified = true;
+        updateLighting();
         return true;
     }
 

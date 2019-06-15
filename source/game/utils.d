@@ -15,6 +15,9 @@ Vector2 vec2f(T)(T vec) if (IsVector!T) {
     return Vector2(cast(float)vec.X, cast(float)vec.Y);
 }
 
+/++
+    Converts from tile position to pixels
++/
 Vector2i toPixels(T)(T vec) if (IsVector!T) {
     float c = cast(float)TILE_SIZE;
     int bx = cast(int)Mathf.Floor(cast(float)vec.X*c);
@@ -22,6 +25,9 @@ Vector2i toPixels(T)(T vec) if (IsVector!T) {
     return Vector2i(bx, by);
 }
 
+/++
+    Converts from pixels to tile position
++/
 Vector2i toTilePos(T)(T vec) if (IsVector!T) {
     float c = cast(float)TILE_SIZE;
     int bx = cast(int)Mathf.Floor(cast(float)vec.X/c);
@@ -29,6 +35,16 @@ Vector2i toTilePos(T)(T vec) if (IsVector!T) {
     return Vector2i(bx, by);
 }
 
+/++
+    Converts pixel to chunk position
++/
+T toChunkPos(T)(T vec) if (IsVector!T) {
+    return vec.toTilePos.tilePosToChunkPos;
+}
+
+/++
+    Converts from chunk position to tile position
++/
 Vector2i chunkPosToTilePos(T)(T vec) if (IsVector!T) {
     float c = cast(float)TILE_SIZE;
     int bx = cast(int)Mathf.Floor(cast(float)vec.X*c);
@@ -36,6 +52,9 @@ Vector2i chunkPosToTilePos(T)(T vec) if (IsVector!T) {
     return Vector2i(bx, by);
 }
 
+/++
+    Converts from tile position to chunk position
++/
 Vector2i tilePosToChunkPos(T)(T vec) if (IsVector!T) {
     float c = cast(float)CHUNK_SIZE;
     int bx = cast(int)Mathf.Floor(cast(float)vec.X/c);
@@ -43,10 +62,9 @@ Vector2i tilePosToChunkPos(T)(T vec) if (IsVector!T) {
     return Vector2i(bx, by);
 }
 
-T toChunkPos(T)(T vec) if (IsVector!T) {
-    return vec.toTilePos.tilePosToChunkPos;
-}
-
+/++
+    Calculate adjacent positions
++/
 T[] getAdjacent(T)(T pos, int sx, int sy) if (IsVector!T) {
     T[] adjacent;
     foreach(x; 0..sx) {
@@ -57,6 +75,28 @@ T[] getAdjacent(T)(T pos, int sx, int sy) if (IsVector!T) {
     return adjacent;
 }
 
+/++
+    Calculate adjacent positions, without center.
++/
+T[] getAdjacentEx(T)(T pos, int sx, int sy) if (IsVector!T) {
+    T[] adjacent;
+    foreach(x; 0..sx*2) {
+        foreach(y; 0..sy*2) {
+            if (x == sx/2 && y = sy/2) continue;
+            adjacent ~= T(pos.X+(x-(sx/2)), pos.Y+(y-(sy/2)));
+        }
+    }
+    return adjacent;
+}
+
+bool withinChunkBounds(Vector2i pos) {
+    return (pos.X >= 0 && pos.X <= CHUNK_SIZE &&
+            pos.Y >= 0 && pos.Y <= CHUNK_SIZE);
+}
+
+/++
+    Calcuate AABB collissions on the X axis.
++/
 float calculateAABBCollissionX(Rectangle a, Rectangle b) {
     if (a.Intersects(b) || b.Intersects(a)) {
         if (a.Center.X < b.Center.X) {
@@ -67,6 +107,9 @@ float calculateAABBCollissionX(Rectangle a, Rectangle b) {
     return 0.0f;
 }
 
+/++
+    Calculate AABB collissions on the Y axis.
++/
 float calculateAABBCollissionY(Rectangle a, Rectangle b) {
     if (a.Intersects(b) || b.Intersects(a)) {
         if (a.Center.Y < b.Center.Y) {

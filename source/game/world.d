@@ -7,18 +7,17 @@ import game;
 import game.utils;
 import polyplex;
 import containers.list;
+import game.lighting.lman;
 import msgpack;
 import config;
-
-enum CHUNK_EXTENT_X = 6;
-enum CHUNK_EXTENT_Y = 5;
 
 class World {
 private:
     WorldGenerator generator;
-    List!Chunk chunks;
+    Chunk[Vector2i] chunks;
     Entity player;
     Entity[] entities;
+    LightingManager lighting;
 
     Rectangle effectiveViewport() {
         float px = (camera.Position.X-(camera.Origin.X/camera.Zoom));
@@ -45,30 +44,16 @@ private:
 
     void updateChunks() {
         Vector2i playerChunk = player.chunkPosition();
-        foreach(i; 0..chunks.count) {
-            // if (chunks[i].position.Distance(player.chunkPosition) > 8) {
-                // chunks[i].invalidated = true;
-            // }
-            if (chunks[i].position.X < playerChunk.X-CHUNK_EXTENT_X ||
-                chunks[i].position.X > playerChunk.X+CHUNK_EXTENT_X ||
-                chunks[i].position.Y < playerChunk.Y-CHUNK_EXTENT_Y ||
-                chunks[i].position.Y > playerChunk.Y+CHUNK_EXTENT_Y) {
-                    chunks[i].invalidated = true;
-                }
-        }
-
-        foreach(i; 0..chunks.count) {
-            if (i >= chunks.count) break;
-            if (chunks[i].invalidated) {
-                if (chunks[i].modified) {
+        foreach(k, chunk; getChunks) {
+            if (chunk.position.X < playerChunk.X-CHUNK_EXTENT_X ||
+                chunk.position.X > playerChunk.X+CHUNK_EXTENT_X ||
+                chunk.position.Y < playerChunk.Y-CHUNK_EXTENT_Y ||
+                chunk.position.Y > playerChunk.Y+CHUNK_EXTENT_Y) {
+                if (chunk.modified) {
                     // TODO: Save chunk if changed
-                    chunks[i].save();
+                    chunk.save();
                 }
-                
-                // if (chunks[i].isBusy()) {
-                //     chunks[i].forceFinishLightingUpdate();
-                // }
-                chunks.removeAt(i);
+                getChunks.remove(k);
             }
         }
 
@@ -84,7 +69,8 @@ private:
                     } 
                     
                 if (this.hasChunkAt(actualPosition)) continue;
-                chunks ~= loadChunk(actualPosition);
+                getChunks[actualPosition] = loadChunk(actualPosition);
+                lighting.notifyUpdate(actualPosition);
             }
         }
     }
@@ -109,7 +95,7 @@ private:
     }
 
     void saveWorld() {
-    import std.file;
+        import std.file;
         import std.path;
 
         WorldSv saveInfo;
@@ -124,13 +110,21 @@ public:
     Camera2D camera;
 
     this() {
+        lighting = new LightingManager(this);
+        lighting.start();
+    }
 
+    ref LightingManager getLighting() {
+        return lighting;
+    }
+
+    ref Chunk[Vector2i] getChunks() {
+        return chunks;
     }
 
     Chunk opIndex(int x, int y) {
-        foreach(chunk; chunks) {
-            if (chunk.position.X == x && chunk.position.Y == y) return chunk;
-        }
+        Vector2i pos = Vector2i(x, y);
+        if (pos in getChunks) return getChunks[pos];
         return null;
     }
 
@@ -139,6 +133,7 @@ public:
     }
 
     Tile tileAt(Vector2i position) {
+        if (this is null) return null;
         Vector2i tilePos = position.wrapTilePos;
         Vector2i chunkPos = position.tilePosToChunkPos;
         if (this[chunkPos.X, chunkPos.Y] is null) return null;
@@ -146,6 +141,7 @@ public:
     }
 
     Tile wallAt(Vector2i position) {
+        if (this is null) return null;
         Vector2i tilePos = position.wrapTilePos;
         Vector2i chunkPos = position.tilePosToChunkPos;
         if (this[chunkPos.X, chunkPos.Y] is null) return null;
@@ -161,6 +157,21 @@ public:
         return tilePos.toTilePos;
     }
 
+    bool isValidTile(Vector2i pos) {
+        Vector2i chunkPos = pos.tilePosToChunkPos;
+        if (this[chunkPos.X, chunkPos.Y] is null) return false;
+
+        Vector2i tilePos = pos.wrapTilePos;
+        if (this[chunkPos.X, chunkPos.Y].tiles[tilePos.X][tilePos.Y] !is null) return true;
+        if (this[chunkPos.X, chunkPos.Y].walls[tilePos.X][tilePos.Y] !is null) return true;
+        return false;
+    }
+
+    bool isValidTileInChunk(Vector2i pos) {
+        Vector2i chunkPos = pos.tilePosToChunkPos;
+        return this[chunkPos.X, chunkPos.Y] !is null;
+    }
+
     void init() {
         generator = new WorldGenerator(this);
         camera = new Camera2D(Vector2(0f, 0f));
@@ -172,7 +183,7 @@ public:
     }
 
     void update(GameTimes gameTime) {
-        foreach(chunk; chunks) {
+        foreach(chunk; getChunks) {
             chunk.update();
         }
 
@@ -190,7 +201,7 @@ public:
         spriteBatch.Begin(SpriteSorting.Deferred, Blending.NonPremultiplied, Sampling.PointClamp, RasterizerState.Default, null, camera);
 
             Rectangle efView = effectiveViewportRenderbounds;
-            foreach(chunk; chunks) {
+            foreach(chunk; getChunks) {
                 if (chunk.getHitbox is null) continue;
                 if (!chunk.getHitbox.Intersects(efView)) continue; 
                 chunk.drawWalls(spriteBatch, efView);
@@ -202,7 +213,7 @@ public:
                 entity.draw(spriteBatch);
             }
 
-            foreach(chunk; chunks) {
+            foreach(chunk; getChunks) {
                 if (chunk.getHitbox is null) continue;
                 if (!chunk.getHitbox.Intersects(efView)) continue; 
                 chunk.draw(spriteBatch, efView);
@@ -215,19 +226,18 @@ public:
 
             player.drawAfter(spriteBatch);
         spriteBatch.End();
-        spriteBatch.Begin(SpriteSorting.Deferred, Blending.NonPremultiplied, Sampling.LinearClamp, RasterizerState.Default, null, camera);
-            foreach(chunk; chunks) {
+        spriteBatch.Begin(SpriteSorting.Deferred, Blending.NonPremultiplied, Sampling.PointClamp, RasterizerState.Default, null, camera);
+            foreach(chunk; getChunks) {
                 chunk.drawShadowMap(spriteBatch);
             }
         spriteBatch.End();
     }
 
     void save() {
-        foreach(i; 0..chunks.count) {
-            if (i >= chunks.count) break;
-            if (chunks[i].modified) {
+        foreach(_, chunk; getChunks) {
+            if (chunk.modified) {
                 // TODO: Save chunk if changed
-                chunks[i].save();
+                chunk.save();
             }
         }
         this.saveWorld();

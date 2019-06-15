@@ -5,23 +5,44 @@ import game.chunk;
 import polyplex;
 import config;
 
-class ShadowMap {
+
+class ShadowMap(size_t WIDTH, size_t HEIGHT, size_t SCALE = CHUNK_SHADOW_SCALE) {
 package(game.lighting):
+    alias thisType = typeof(this);
+
+    bool isLit;
+
     bool isShadowMappingRunning;
 
-    Task!(genShadowMapTex, ShadowMap)* shadowMapTask;
+    Task!(genShadowMapTex, thisType)* shadowMapTask;
 
-    float[CHUNK_SHADOW_SIZE][CHUNK_SHADOW_SIZE] shadowMap;
+    float[WIDTH][HEIGHT] shadowMap;
 
-    ubyte[(CHUNK_SHADOW_SIZE*4)*CHUNK_SHADOW_SIZE] shadowMapTextureData;
+    ubyte[(WIDTH*4)*HEIGHT] shadowMapTextureData;
 
     Texture2D shadowMapTexture;
+
+    Color TRC;
 public:
 
+    float getLight(Vector2i at) {
+        return shadowMap[at.X*SCALE][at.Y*SCALE];
+    }
+
+    void setLight(Vector2i at, float light) {
+        isLit = true;
+        static foreach(x; 0..SCALE) {
+            static foreach(y; 0..SCALE) {
+               shadowMap[(at.X*SCALE)+x][(at.Y*SCALE)+y] = light;
+            }
+        }
+    }
+
     this() {
+        TRC = new Color(255, 255, 255, CHUNK_SHADOW_TRC);
         import polyplex.core.content.gl.textures;
         shadowMapTexture = new GlTexture2D(new TextureImg(CHUNK_SHADOW_SIZE, CHUNK_SHADOW_SIZE, this.shadowMapTextureData));
-        clear();
+        clear(true);
     }
 
     void render(SpriteBatch spriteBatch, Rectangle area) {
@@ -29,7 +50,7 @@ public:
             if (area is null) return;
             float pxx = cast(float)shadowMapTexture.Width+(0.2f/cast(float)shadowMapTexture.Width);
             float pxy = cast(float)shadowMapTexture.Height+(0.2f/cast(float)shadowMapTexture.Height);
-            spriteBatch.Draw(shadowMapTexture, area, new Rectangle(0, 0, cast(int)pxx, cast(int)pxy), Color.White);
+            spriteBatch.Draw(shadowMapTexture, area, new Rectangle(0, 0, cast(int)pxx, cast(int)pxy), TRC);
         }
     }
 
@@ -49,6 +70,10 @@ public:
             shadowMapTexture.UpdatePixelData(this.shadowMapTextureData);
             finish();
         }
+    }
+
+    bool lit() {
+        return isLit;
     }
 
     /++
@@ -75,15 +100,18 @@ public:
     /++
         Clears the shadowmap of data.
     +/
-    void clear() {
-        foreach(x; 0..CHUNK_SHADOW_SIZE) {
-            foreach(y; 0..CHUNK_SHADOW_SIZE) {
+    void clear(bool fclear = false) {
+        foreach(x; 0..WIDTH) {
+            foreach(y; 0..HEIGHT) {
                 shadowMap[x][y] = 0f;
             }
         }
-        foreach(x; 0..(CHUNK_SHADOW_SIZE*4)*CHUNK_SHADOW_SIZE) {
-            shadowMapTextureData[x] = 0;
+        if (fclear) {
+            foreach(x; 0..(WIDTH*4)*HEIGHT) {
+                shadowMapTextureData[x] = 0;
+            }
         }
+        isLit = false;
     }
 
 }
@@ -91,7 +119,7 @@ public:
 /++
     Generate a shadow map texture from a chunk in a world.
 +/
-void genShadowMapTex(ref ShadowMap shmap) {
+void genShadowMapTex(T)(ref T shmap) {
     shmap.isShadowMappingRunning = true;
 
     /// Blur the shadowmap
@@ -117,7 +145,7 @@ void genShadowMapTex(ref ShadowMap shmap) {
     Box-blur the specified shadowmap with the defined radius.
 +/
 void blurShadowMap(ref float[CHUNK_SHADOW_SIZE][CHUNK_SHADOW_SIZE] shadowMap, int r) {
-    float[] src = new float[](CHUNK_SHADOW_SIZE*CHUNK_SHADOW_SIZE);
+    float[CHUNK_SHADOW_SIZE*CHUNK_SHADOW_SIZE] src;
     src[] = cast(float[])shadowMap;
 
     foreach(i; 0..CHUNK_SHADOW_SIZE) {
