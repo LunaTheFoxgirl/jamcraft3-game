@@ -6,10 +6,8 @@ import game.tiles;
 import std.format;
 import engine.registry;
 import msgpack;
+import config;
 
-enum BLOCK_SIZE = 16;
-
-enum BLOCK_HB_SHRINK = 4;
 
 private static Color FGColor;
 private static Color BGColor;
@@ -28,6 +26,15 @@ private:
     int strength;
 
     @nonPacked
+    float hitScaleEff = 0f;
+
+    @nonPacked
+    float lightBlocking = 0.2f;
+
+    @nonPacked
+    float lightEmission = 0.0f;
+
+    @nonPacked
     static Texture2D breakAnim;
 
     Rectangle getBreakAnimStep() {
@@ -43,8 +50,17 @@ private:
 
     final void drawBreakAnim(SpriteBatch spriteBatch) {
         if (health != maxHealth) {
-            spriteBatch.Draw(breakAnim, renderbox, getBreakAnimStep(), Color.White);
+            spriteBatch.Draw(breakAnim, getRenderBox, getBreakAnimStep(), Color.White);
         }
+    }
+
+    final Rectangle getRenderBox() {
+        float efDouble = hitScaleEff*2;
+        int px = cast(int)(cast(float)renderbox.X-hitScaleEff);
+        int py = cast(int)(cast(float)renderbox.Y-hitScaleEff);
+        int pw = cast(int)(cast(float)renderbox.Width+efDouble);
+        int ph = cast(int)(cast(float)renderbox.Height+efDouble);
+        return new Rectangle(px, py, pw, ph);
     }
 
 protected:
@@ -61,6 +77,20 @@ protected:
     @nonPacked
     string tileId;
     
+    /++
+        Set how much light this emits.
+    +/
+    final void setLightEmission(float amount) {
+        this.lightEmission = amount;
+    }
+
+    /++
+        Set how much light this blocks
+    +/
+    final void setLightBlock(float amount) {
+        this.lightBlocking = amount;
+    }
+
     /++
         Sets the strength of the tile, set to -1 for indestructible.
     +/
@@ -148,6 +178,9 @@ public:
             return;
         }
 
+        // Apply the lil' cute effect.
+        hitScaleEff = -HIT_SCALE_EFF_MAX;
+
         // Heal the tile
         this.health += amount;
         if (this.health > maxHealth) this.health = maxHealth;
@@ -163,6 +196,9 @@ public:
         // If you don't have enough dig power, it's indestructible.
         if (digPower < strength) return;
 
+        // Apply the lil' cute effect.
+        hitScaleEff = HIT_SCALE_EFF_MAX;
+
         // Decrease health.
         health -= digPower;
         if (health <= 0) breakTile(wall);
@@ -174,6 +210,7 @@ public:
     void breakTile(bool wall = false) {
         this.onDestroy();
         chunk.modified = true;
+        // TODO: update shadow mapping.
         if (!wall) {
             chunk.tiles[position.X][position.Y] = null;
             return;
@@ -181,20 +218,43 @@ public:
         chunk.walls[position.X][position.Y] = null;
     }
 
+    bool use() {
+        return onUse();
+    }
+
     @nonPacked
     Vector2i getWorldPosition() {
         return Vector2i(
-            (position.X*BLOCK_SIZE)+(chunk.position.X*CHUNK_SIZE*BLOCK_SIZE),
-            (position.Y*BLOCK_SIZE)+(chunk.position.Y*CHUNK_SIZE*BLOCK_SIZE));
+            (position.X*TILE_SIZE)+(chunk.position.X*CHUNK_SIZE*TILE_SIZE),
+            (position.Y*TILE_SIZE)+(chunk.position.Y*CHUNK_SIZE*TILE_SIZE));
     }
 
     void draw(SpriteBatch spriteBatch) {
-        spriteBatch.Draw(texture, renderbox, texture.Size, FGColor);
+
+        // Handle the cute animation
+        if (hitScaleEff > 0) {
+            hitScaleEff -= HIT_SCALE_FALLOFF;
+        }
+        if (hitScaleEff < 0) {
+            hitScaleEff += HIT_SCALE_FALLOFF;
+        }
+
+        // Draw
+        spriteBatch.Draw(texture, getRenderBox, texture.Size, FGColor);
         drawBreakAnim(spriteBatch);
     }
 
     void drawWall(SpriteBatch spriteBatch) {
-        spriteBatch.Draw(texture, renderbox, texture.Size, BGColor);
+
+        // Handle the cute animation
+        if (hitScaleEff > 0) {
+            hitScaleEff--;
+        }
+        if (hitScaleEff < 0) {
+            hitScaleEff++;
+        }
+
+        spriteBatch.Draw(texture, getRenderBox, texture.Size, BGColor);
         drawBreakAnim(spriteBatch);
     }
 
@@ -207,16 +267,29 @@ public:
         this.position = position;
         Vector2i wPosition = getWorldPosition();
         this.hitbox = getDefaultHB(wPosition);
-        this.renderbox = new Rectangle(wPosition.X, wPosition.Y, BLOCK_SIZE, BLOCK_SIZE);
+        this.renderbox = new Rectangle(wPosition.X, wPosition.Y, TILE_SIZE, TILE_SIZE);
+    }
+
+    final void playInitAnimation() {
+        // Apply the lil' cute effect.
+        hitScaleEff = -HIT_SCALE_EFF_MAX;
+    }
+
+    final float getLightBlock() {
+        return lightBlocking;
+    }
+
+    final float getEmission() {
+        return lightEmission;
     }
 }
 
 Rectangle getDefaultHB(Vector2i worldPosition) {
     return new Rectangle(
-        worldPosition.X+BLOCK_HB_SHRINK, 
-        worldPosition.Y+BLOCK_HB_SHRINK, 
-        BLOCK_SIZE-(BLOCK_HB_SHRINK*2), 
-        BLOCK_SIZE-(BLOCK_HB_SHRINK*2));
+        worldPosition.X+TILE_HB_SHRINK, 
+        worldPosition.Y+TILE_HB_SHRINK, 
+        TILE_SIZE-(TILE_HB_SHRINK*2), 
+        TILE_SIZE-(TILE_HB_SHRINK*2));
 }
 
 void handlePackingTile(T)(ref Packer packer, ref T tile) {

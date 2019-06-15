@@ -1,0 +1,21 @@
+module config;
+
+/++
+        CHUNK CONFIG
++/
+
+enum CHUNK_SIZE = 16;
+enum CHUNK_SHADOW_SCALE = TILE_SIZE/2;
+enum CHUNK_SHADOW_SIZE = CHUNK_SIZE*CHUNK_SHADOW_SCALE;
+enum CHUNK_SIZE_PIXELS = TILE_SIZE*CHUNK_SIZE;
+enum LIGHT_MIN_BLOCK = 0.05f;
+
+
+/++
+        TILE CONFIG
++/
+enum TILE_SIZE = 16;
+
+enum TILE_HB_SHRINK = 4;
+enum HIT_SCALE_EFF_MAX = 2f;
+enum HIT_SCALE_FALLOFF = 1f;

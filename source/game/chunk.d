@@ -3,21 +3,41 @@ import polyplex;
 import std.format;
 import msgpack;
 import game.tiles;
+import game.utils;
+import game.world;
 import std.base64;
 import std.file;
 import std.path;
-
-enum CHUNK_SIZE = 16;
-
-enum CHUNK_SIZE_PIXELS = BLOCK_SIZE*CHUNK_SIZE;
+import std.parallelism;
+import game.lighting.lman;
+import game.lighting.smap;
+import config;
 
 class Chunk {
 private:
+    @nonPacked
     Rectangle hitbox;
 
+    @nonPacked
+    World world;
+
+    @nonPacked
+    ShadowMap shadowMap;
 public:
+    ~this() {
+    }
+
+    this() {
+        shadowMap = new ShadowMap();
+    }
+
+    this(World world) {
+        this.world = world;
+        this();
+    }
+
     void updateHitbox() {
-        hitbox = new Rectangle(position.X*CHUNK_SIZE_PIXELS, position.Y*CHUNK_SIZE_PIXELS, BLOCK_SIZE*CHUNK_SIZE_PIXELS, BLOCK_SIZE*CHUNK_SIZE_PIXELS);
+        hitbox = new Rectangle(position.X*CHUNK_SIZE_PIXELS, position.Y*CHUNK_SIZE_PIXELS, CHUNK_SIZE_PIXELS, CHUNK_SIZE_PIXELS);
     }
 
     Rectangle getHitbox() {
@@ -67,6 +87,17 @@ public:
         }
     }
 
+    void drawShadowMap(SpriteBatch spriteBatch) {
+        
+    }
+
+    bool useTile(Vector2i at) {
+        if (this.tiles[at.X][at.Y] !is null) {
+            return this.tiles[at.X][at.Y].use();
+        }
+        return false;
+    }
+
     bool attackTile(Vector2i at, int digPower, bool wall) {
         if (!wall) {
             if (this.tiles[at.X][at.Y] !is null) {
@@ -89,17 +120,19 @@ public:
         }
         this.tiles[at.X][at.Y] = tile;
         this.tiles[at.X][at.Y].onInit(at, this);
+        this.tiles[at.X][at.Y].playInitAnimation();
         this.modified = true;
         return true;
     }
 
     bool placeWall(T)(T tile, Vector2i at, int healAmount = 10) {
-        if (this.tiles[at.X][at.Y] !is null) {
-            this.tiles[at.X][at.Y].healDamage(healAmount);
+        if (this.walls[at.X][at.Y] !is null) {
+            this.walls[at.X][at.Y].healDamage(healAmount);
             return false;
         }
         this.walls[at.X][at.Y] = tile;
         this.walls[at.X][at.Y].onInit(at, this);
+        this.walls[at.X][at.Y].playInitAnimation();
         this.modified = true;
         return true;
     }
@@ -108,6 +141,7 @@ public:
         if (hitbox is null) {
             updateHitbox();
         }
+        shadowMap.updateTexture();
     }
 
     void save() {
@@ -119,13 +153,14 @@ public:
     }
 }
 
-Chunk load(Vector2i position) {
+Chunk load(Vector2i position, World world) {
     string path = buildPath("world", "%dx%d.chnk".format(position.X, position.Y));
     if (!exists("world/")) mkdir("world/");
     if (!exists(path)) return null;
     ubyte[] txt = cast(ubyte[])read(path);
 
     Chunk ch = unpack!(Chunk, true)(txt);
+    ch.world = world;
     foreach(x; 0..CHUNK_SIZE) {
         foreach(y; 0..CHUNK_SIZE) {
             if (ch.tiles[x][y] !is null) ch.tiles[x][y].onInit(Vector2i(x, y), ch);
@@ -133,28 +168,6 @@ Chunk load(Vector2i position) {
         }
     }
     return ch;
-}
-
-Chunk GenerateAir(Vector2i position) {
-    Chunk output = new Chunk();
-    output.position = position;
-    output.loaded = true;
-    output.modified = false;
-    return output;
-}
-
-Chunk GenerateFilled(Vector2i position, string type = "sand") {
-    Chunk output = new Chunk();
-    output.position = position;
-    output.loaded = true;
-    output.modified = false;
-    foreach(y; 0..CHUNK_SIZE) {
-        foreach(x; 0..CHUNK_SIZE) {
-            output.tiles[x][y] = new SandTile(Vector2i(x, y), output);
-            output.walls[x][y] = new SandTile(Vector2i(x, y), output);
-        }
-    }
-    return output;
 }
 
 void handlePackingChunk(ref Packer packer, ref Chunk chunk) {

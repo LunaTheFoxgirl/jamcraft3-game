@@ -3,6 +3,7 @@ public import game.world;
 public import game.tile;
 public import game.chunk;
 public import engine.cman;
+import config;
 import polyplex;
 
 /++
@@ -26,7 +27,7 @@ public:
     Vector2 position;
 
     Vector2i tilePosition() {
-        return Vector2i(cast(int)position.X/BLOCK_SIZE, cast(int)position.Y/BLOCK_SIZE);
+        return Vector2i(cast(int)position.X/TILE_SIZE, cast(int)position.Y/TILE_SIZE);
     }
 
     Vector2i chunkPosition() {

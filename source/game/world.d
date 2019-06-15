@@ -8,6 +8,7 @@ import game.utils;
 import polyplex;
 import containers.list;
 import msgpack;
+import config;
 
 enum CHUNK_EXTENT_X = 6;
 enum CHUNK_EXTENT_Y = 5;
@@ -33,7 +34,7 @@ private:
     Rectangle effectiveViewportRenderbounds() {
         float px = (camera.Position.X-(camera.Origin.X/camera.Zoom));
         float py = (camera.Position.Y-(camera.Origin.Y/camera.Zoom));
-        float ps = ((BLOCK_SIZE*2)*camera.Zoom)*2;
+        float ps = ((TILE_SIZE*2)*camera.Zoom)*2;
         return new Rectangle(
             cast(int)(px-ps),
             cast(int)(py-ps),
@@ -43,10 +44,17 @@ private:
     }
 
     void updateChunks() {
+        Vector2i playerChunk = player.chunkPosition();
         foreach(i; 0..chunks.count) {
-            if (chunks[i].position.Distance(player.chunkPosition) > 8) {
-                chunks[i].invalidated = true;
-            }
+            // if (chunks[i].position.Distance(player.chunkPosition) > 8) {
+                // chunks[i].invalidated = true;
+            // }
+            if (chunks[i].position.X < playerChunk.X-CHUNK_EXTENT_X ||
+                chunks[i].position.X > playerChunk.X+CHUNK_EXTENT_X ||
+                chunks[i].position.Y < playerChunk.Y-CHUNK_EXTENT_Y ||
+                chunks[i].position.Y > playerChunk.Y+CHUNK_EXTENT_Y) {
+                    chunks[i].invalidated = true;
+                }
         }
 
         foreach(i; 0..chunks.count) {
@@ -56,26 +64,33 @@ private:
                     // TODO: Save chunk if changed
                     chunks[i].save();
                 }
-                //Logger.Info("Removed chunk at {0}", chunks[i].position);
+                
+                // if (chunks[i].isBusy()) {
+                //     chunks[i].forceFinishLightingUpdate();
+                // }
                 chunks.removeAt(i);
             }
         }
 
         foreach(y; 0..CHUNK_EXTENT_Y*2) {
-            mfr: foreach(x; 0..CHUNK_EXTENT_X*2) {
-                Vector2i actualPosition = player.chunkPosition()+Vector2i(x-(CHUNK_EXTENT_X/2)-2, y-(CHUNK_EXTENT_Y/2));
-                
-                foreach(chunk; chunks) { 
-                    if (chunk.position == actualPosition) continue mfr;
-                }
+            foreach(x; 0..CHUNK_EXTENT_X*2) {
+                Vector2i actualPosition = playerChunk+Vector2i(x-(CHUNK_EXTENT_X/2), y-(CHUNK_EXTENT_Y/2));
 
+                if (actualPosition.X < playerChunk.X-(CHUNK_EXTENT_X/2)||
+                    actualPosition.X > playerChunk.X+(CHUNK_EXTENT_X/2) ||
+                    actualPosition.Y < playerChunk.Y-(CHUNK_EXTENT_Y/2) ||
+                    actualPosition.Y > playerChunk.Y+(CHUNK_EXTENT_Y/2)) {
+                        continue;
+                    } 
+                    
+                if (this.hasChunkAt(actualPosition)) continue;
                 chunks ~= loadChunk(actualPosition);
             }
         }
     }
 
     Chunk loadChunk(Vector2i position) {
-        Chunk chnk = load(position);
+        Chunk chnk = load(position, this);
         if (chnk !is null) return chnk;
         else return generator.generateChunk(position);
     }
@@ -90,6 +105,7 @@ private:
         WorldSv ch = unpack!WorldSv(cast(ubyte[])read(path));
         
         player.position = ch.playerPosition;
+        camera.Zoom = ch.cameraZoom;
     }
 
     void saveWorld() {
@@ -98,6 +114,7 @@ private:
 
         WorldSv saveInfo;
         saveInfo.playerPosition = Vector2(Mathf.Floor(player.position.X), Mathf.Floor(player.position.Y)-4f);
+        saveInfo.cameraZoom = camera.Zoom;
 
         if (!exists("world/")) mkdir("world/");
         write(buildPath("world", "world.wld"), pack(saveInfo));
@@ -115,6 +132,10 @@ public:
             if (chunk.position.X == x && chunk.position.Y == y) return chunk;
         }
         return null;
+    }
+
+    bool hasChunkAt(Vector2i pos) {
+        return this[pos.X, pos.Y] !is null;
     }
 
     Tile tileAt(Vector2i position) {
@@ -141,8 +162,9 @@ public:
     }
 
     void init() {
-        generator = new WorldGenerator();
+        generator = new WorldGenerator(this);
         camera = new Camera2D(Vector2(0f, 0f));
+        camera.Zoom = 1.6f;
 
         player = new Player(this);
         updateChunks();
@@ -186,12 +208,17 @@ public:
                 chunk.draw(spriteBatch, efView);
             }
 
+
             foreach(entity; entities) {
                 entity.drawAfter(spriteBatch);
             }
 
             player.drawAfter(spriteBatch);
-            
+        spriteBatch.End();
+        spriteBatch.Begin(SpriteSorting.Deferred, Blending.NonPremultiplied, Sampling.LinearClamp, RasterizerState.Default, null, camera);
+            foreach(chunk; chunks) {
+                chunk.drawShadowMap(spriteBatch);
+            }
         spriteBatch.End();
     }
 
@@ -209,4 +236,5 @@ public:
 
 struct WorldSv {
     Vector2 playerPosition;
+    float cameraZoom;
 }

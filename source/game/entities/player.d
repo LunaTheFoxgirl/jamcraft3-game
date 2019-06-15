@@ -9,6 +9,8 @@ enum PLAYER_JUMP_SPEED = 1f;
 enum GRAVITY_CONST = 1.5f;
 enum MAX_SPEED = 14f;
 enum DRAG_CONST = 0.7f;
+
+
 enum JUMP_TIMER_START = 10;
 
 struct CollissionData {
@@ -18,8 +20,13 @@ struct CollissionData {
 
 class Player : Entity {
 private:
+
+    int breakSpeed = 15;
+    int placeSpeed = 10;
+
     SpriteFlip spriteFlip;
     int jumpTimer;
+    int actionTimer;
     bool grounded;
 
     KeyboardState state;
@@ -119,42 +126,56 @@ private:
         handlePhysics();
     }
 
-    void attackBlock(Vector2i at, bool wall) {
+    bool attackBlock(Vector2i at, bool wall) {
         chunkAtScreen = at.tilePosToChunkPos;
         Chunk chunk = world[chunkAtScreen.X, chunkAtScreen.Y];
         Vector2i mBlockPos = at.wrapTilePos;
 
         Vector2i tilePos = Vector2i(cast(int)mBlockPos.X, cast(int)mBlockPos.Y);
         if (chunk !is null) {
-            chunk.attackTile(tilePos, pickPower, wall);
+            return chunk.attackTile(tilePos, pickPower, wall);
         }
+        return false;
     }
 
-    void placeTile(T)(T tile, Vector2i at, bool isWall) {
+    bool placeTile(T)(T tile, Vector2i at, bool isWall) {
+        // Get the chunk where the tile should be placed
         chunkAtScreen = at.tilePosToChunkPos;
         Chunk chunk = world[chunkAtScreen.X, chunkAtScreen.Y];
+
+        // Calculate the tilepos within
         Vector2i tilePos = at.wrapTilePos;
-        if (isWall) {
-            chunk.placeWall(tile, tilePos, pickPower*2);
-            return;
-        }
+
+        // Handle wall case
+        if (isWall)  return chunk.placeWall(tile, tilePos, pickPower*2);
+        
+        // Get tile position in pixels as a rectangle via default collission
         Vector2i px = at.toPixels;
         Rectangle tileBounds = getDefaultHB(px);
-        if (tileBounds.Intersects(this.hitbox)) return;
-        chunk.placeTile(tile, tilePos, pickPower*2);
+
+        // If the tile would be in the way cancel.
+        if (tileBounds.Intersects(this.hitbox)) return false;
+
+        // Try to place tile
+        return chunk.placeTile(tile, tilePos, pickPower*2);
     }
 
     void handleInteraction() {
         tileAtScreen = world.getTileAtScreen(Mouse.Position);
+        if (actionTimer == 0) {
+            bool wall = state.IsKeyDown(Keys.LeftShift);
+            if (Mouse.GetState().IsButtonPressed(MouseButton.Right)) {
+                placeTile(new SandTile(), tileAtScreen, wall);
+                actionTimer = placeSpeed;
+                return;
+            }
 
-        bool wall = state.IsKeyDown(Keys.LeftShift);
-
-        if (Mouse.GetState().IsButtonPressed(MouseButton.Right)) {
-            placeTile(new SandTile(), tileAtScreen, wall);
-        }
-
-        if (Mouse.GetState().IsButtonPressed(MouseButton.Left)) {
-            attackBlock(tileAtScreen, wall);
+            if (Mouse.GetState().IsButtonPressed(MouseButton.Left)) {
+                if (attackBlock(tileAtScreen, wall)) {
+                    actionTimer = breakSpeed;
+                    return;
+                }
+            }
         }
     }
 
@@ -173,11 +194,22 @@ public:
 
     override void update(GameTimes gameTime) {
         state = Keyboard.GetState();
+        if (actionTimer > 0) {
+            actionTimer--;
+        }
 
         handleMovement();
         handleInteraction();
         world.camera.Position = this.hitbox.Center;
-        world.camera.Zoom = 1.5f;
+        float scroll = Mouse.GetState().Position.Z/20;
+
+        world.camera.Zoom += scroll;
+        if (world.camera.Zoom < 0.9f) {
+            world.camera.Zoom = 0.9f;
+        }
+        if (world.camera.Zoom > 2.5f) {
+            world.camera.Zoom = 2.5f;
+        }
     }
 
     override void draw(SpriteBatch spriteBatch) {

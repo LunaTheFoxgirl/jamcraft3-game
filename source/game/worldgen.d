@@ -2,14 +2,19 @@ module game.worldgen;
 import dosimplex.generator;
 import game.chunk;
 import game.tiles;
+import game.world;
 import polyplex;
+import config;
 
 class WorldGenerator {
 private:
     SNoiseGenerator ngen;
+    World world;
+
 public:
-    this() {
+    this(World world) {
         ngen = SNoiseGenerator(SNoiseGenerator.DEFAULT_SEED);
+        this.world = world;
     }
 
     Chunk generateChunk(Vector2i position) {
@@ -23,7 +28,7 @@ public:
         enum H_SMOOTH_FACTOR = 256;
         enum HARDSAND_START = 64;
 
-        Chunk chunk = new Chunk();
+        Chunk chunk = new Chunk(world);
         chunk.position = position;
         chunk.loaded = true;
         chunk.modified = false;

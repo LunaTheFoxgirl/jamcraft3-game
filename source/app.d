@@ -4,6 +4,7 @@ import game;
 
 void main() {
     LogLevel |= LogType.Info;
+    LogLevel |= LogType.Warning;
     
     // Run the game
     DunesGame game = new DunesGame();
