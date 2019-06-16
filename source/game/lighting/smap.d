@@ -239,7 +239,7 @@ void genShadowMapTex(T)(T shmap) {
 /++
     Box-blur the specified shadowmap with the defined radius.
 +/
-void blurShadowMap(ref float[CHUNK_SHADOW_SIZE][CHUNK_SHADOW_SIZE] shadowMap, int r) {
+void blurShadowMap(T)(ref T shadowMap, int r) {
     float[CHUNK_SHADOW_SIZE*CHUNK_SHADOW_SIZE] src;
     src[] = cast(float[])shadowMap;
 

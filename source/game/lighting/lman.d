@@ -145,15 +145,15 @@ private:
         }
     
         //genShadowMapTex(world.getChunks[chunkPos].shadowMap);
-        mapper.notifyUpdate(world.getChunks[chunkPos].shadowMap);
+        //mapper.notifyUpdate(world.getChunks[chunkPos].shadowMap);
     }
 
     void execLightpass(Vector2i chunkPos) {
         spread.clear();
 
         // Clear lighting
-        if (world.getChunks[chunkPos].shadowMap.lit) 
-            world.getChunks[chunkPos].shadowMap.clear();
+        // if (world.getChunks[chunkPos].shadowMap.lit) 
+        //     world.getChunks[chunkPos].shadowMap.clear();
 
         // Run light pass
         runLightPass(chunkPos, true);
@@ -161,7 +161,7 @@ private:
         //Logger.Info("Done lighting, notifying update...");
         // Notify adjacent chunks to update their lighting texture.
         foreach(chunk; updatedChunks) {
-            mapper.notifyUpdate(world.getChunks[chunk].shadowMap);
+            //mapper.notifyUpdate(world.getChunks[chunk].shadowMap);
         }
     }
 

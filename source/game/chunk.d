@@ -13,8 +13,6 @@ import game.lighting.lman;
 import game.lighting.smap;
 import config;
 
-alias ChunkShadowMap = ShadowMap!(CHUNK_SHADOW_SIZE, CHUNK_SHADOW_SIZE);
-
 class Chunk {
 private:
     @nonPacked
@@ -26,13 +24,8 @@ public:
     ~this() {
     }
 
-    this() {
-        shadowMap = new ShadowMap!(CHUNK_SHADOW_SIZE, CHUNK_SHADOW_SIZE)();
-    }
-
     this(World world) {
         this.world = world;
-        this();
     }
 
     void updateHitbox() {
@@ -60,10 +53,6 @@ public:
     @nonPacked
     bool modified;
 
-    /// The shadow mapping associated with the chunk
-    @nonPacked
-    ChunkShadowMap shadowMap;
-
     void draw(SpriteBatch spriteBatch, Rectangle viewport) {
         foreach(row; tiles) {
             foreach(block; row) {
@@ -84,10 +73,6 @@ public:
                 }
             }
         }
-    }
-
-    void drawShadowMap(SpriteBatch spriteBatch) {
-        shadowMap.render(spriteBatch, this.getHitbox);
     }
 
     bool useTile(Vector2i at) {
@@ -113,11 +98,11 @@ public:
     }
 
     void updateLighting(int adj = 0) {
-        if (adj > 0) {
-            world.invalidateLightArea(position, adj, adj);
-        } else {
-            world.getLighting.notifyUpdate(position);
-        }
+        // if (adj > 0) {
+            // world.invalidateLightArea(position, adj, adj);
+        // } else {
+            // world.getLighting.notifyUpdate(position);
+        // }
     }
 
     bool placeTile(T)(T tile, Vector2i at, int healAmount = 10) {
@@ -154,7 +139,6 @@ public:
         if (hitbox is null) {
             updateHitbox();
         }
-        shadowMap.updateTexture();
     }
 
     void save() {
@@ -165,6 +149,7 @@ public:
         write(buildPath("world", "%dx%d.chnk".format(position.X, position.Y)), pack!(true)(this));
     }
 }
+
 
 Chunk load(Vector2i position, World world) {
     string path = buildPath("world", "%dx%d.chnk".format(position.X, position.Y));

@@ -71,7 +71,7 @@ protected:
     Chunk chunk;
 
     @nonPacked
-    Texture2D texture;
+    string texture;
 
     /// The id of a tile
     @nonPacked
@@ -107,7 +107,11 @@ protected:
     }
 
     final void setTexture(string name) {
-        this.texture = TEXTURES["tiles/tile_%s".format(name)];
+        this.texture = name;
+    }
+
+    final Texture2D getTexture() {
+        return TEXTURES["tiles/tile_%s".format(this.texture)];
     }
 
     /++
@@ -231,6 +235,9 @@ public:
     }
 
     void draw(SpriteBatch spriteBatch) {
+        if (breakAnim is null) {
+            breakAnim = TEXTURES["fx/fx_break"];
+        }
 
         // Handle the cute animation
         if (hitScaleEff > 0) {
@@ -241,7 +248,7 @@ public:
         }
 
         // Draw
-        spriteBatch.Draw(texture, getRenderBox, texture.Size, FGColor);
+        spriteBatch.Draw(getTexture(), getRenderBox, getTexture().Size, FGColor);
         drawBreakAnim(spriteBatch);
     }
 
@@ -255,14 +262,11 @@ public:
             hitScaleEff++;
         }
 
-        spriteBatch.Draw(texture, getRenderBox, texture.Size, BGColor);
+        spriteBatch.Draw(getTexture(), getRenderBox, getTexture().Size, BGColor);
         drawBreakAnim(spriteBatch);
     }
 
     void onInit(Vector2i position, Chunk chunk = null) {
-        if (breakAnim is null) {
-            breakAnim = TEXTURES["fx/fx_break"];
-        }
         this.chunk = chunk;
 
         this.position = position;

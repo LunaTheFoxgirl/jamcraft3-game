@@ -17,15 +17,17 @@ Tile createTile(string id, Vector2i position, Chunk chunk = null) {
     return t;
 }
 
-private void registerTile(T)() if (is(T : Tile)) {
-    T tx = new T;
-    string name = tx.getId;
-    Logger.Info("[TileRegistry] Registering {0} as {1}...", T.stringof, name);
-    TileRegistry.register!T(name);
+private void registerTile(T)(bool mainThread = true) if (is(T : Tile)) {
+    if (mainThread) {
+        T tx = new T;
+        string name = tx.getId;
+        Logger.Info("[TileRegistry] Registering {0} as {1}...", T.stringof, name);
+        TileRegistry.register!T(name);
+    }
     registerTileIOFor!T();
 }
 
-void initRegistry() {
+void initRegistry(bool mainThread = true) {
     TileRegistry = new Registry!Tile();
     registerTile!SandTile();
     registerTile!SandstoneTile();

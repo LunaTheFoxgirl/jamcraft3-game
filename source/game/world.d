@@ -5,19 +5,18 @@ import game.entity;
 import game.entities;
 import game;
 import game.utils;
+import game.chunkprov;
 import polyplex;
 import containers.list;
-import game.lighting.lman;
 import msgpack;
 import config;
+import game.chunkprov;
 
 class World {
 private:
-    WorldGenerator generator;
-    Chunk[Vector2i] chunks;
     Entity player;
     Entity[] entities;
-    LightingManager!ChunkShadowMap lighting;
+    ChunkProvider provider;
 
     Rectangle effectiveViewport() {
         float px = (camera.Position.X-(camera.Origin.X/camera.Zoom));
@@ -40,45 +39,6 @@ private:
             cast(int)(cast(float)WINDOW_BOUNDS.Width/camera.Zoom)+cast(int)ps,
             cast(int)(cast(float)WINDOW_BOUNDS.Height/camera.Zoom)+cast(int)ps
         );
-    }
-
-    void updateChunks() {
-        Vector2i playerChunk = player.chunkPosition();
-        foreach(k, chunk; getChunks) {
-            if (chunk.position.X < playerChunk.X-CHUNK_EXTENT_X ||
-                chunk.position.X > playerChunk.X+CHUNK_EXTENT_X ||
-                chunk.position.Y < playerChunk.Y-CHUNK_EXTENT_Y ||
-                chunk.position.Y > playerChunk.Y+CHUNK_EXTENT_Y) {
-                if (chunk.modified) {
-                    // TODO: Save chunk if changed
-                    chunk.save();
-                }
-                getChunks.remove(k);
-            }
-        }
-
-        foreach(y; 0..CHUNK_EXTENT_Y*2) {
-            foreach(x; 0..CHUNK_EXTENT_X*2) {
-                Vector2i actualPosition = playerChunk+Vector2i(x-(CHUNK_EXTENT_X/2), y-(CHUNK_EXTENT_Y/2));
-
-                if (actualPosition.X < playerChunk.X-(CHUNK_EXTENT_X/2)||
-                    actualPosition.X > playerChunk.X+(CHUNK_EXTENT_X/2) ||
-                    actualPosition.Y < playerChunk.Y-(CHUNK_EXTENT_Y/2) ||
-                    actualPosition.Y > playerChunk.Y+(CHUNK_EXTENT_Y/2)) {
-                        continue;
-                    } 
-                    
-                if (this.hasChunkAt(actualPosition)) continue;
-                getChunks[actualPosition] = loadChunk(actualPosition);
-                lighting.notifyUpdate(actualPosition);
-            }
-        }
-    }
-
-    Chunk loadChunk(Vector2i position) {
-        Chunk chnk = load(position, this);
-        if (chnk !is null) return chnk;
-        else return generator.generateChunk(position);
     }
 
     void loadWorld() {
@@ -109,47 +69,29 @@ private:
 public:
     Camera2D camera;
 
-    this() {
-        lighting = new LightingManager!ChunkShadowMap(this);
-        lighting.start();
-    }
-
-    Player getPlayer() {
-        return cast(Player)player;
-    }
-
-    ref LightingManager!ChunkShadowMap getLighting() {
-        return lighting;
-    }
-
     ref Chunk[Vector2i] getChunks() {
-        return chunks;
+        return provider.getChunks;
     }
 
     Chunk opIndex(int x, int y) {
-        Vector2i pos = Vector2i(x, y);
-        if (pos in getChunks) return getChunks[pos];
-        return null;
+        return provider[x, y];
     }
 
     bool hasChunkAt(Vector2i pos) {
-        return this[pos.X, pos.Y] !is null;
+        return provider.hasChunkAt(pos);
     }
 
     Tile tileAt(Vector2i position) {
-        if (this is null) return null;
-        Vector2i tilePos = position.wrapTilePos;
-        Vector2i chunkPos = position.tilePosToChunkPos;
-        if (this[chunkPos.X, chunkPos.Y] is null) return null;
-        return this[chunkPos.X, chunkPos.Y].tiles[tilePos.X][tilePos.Y];
+        return provider.tileAt(position);
     }
 
     Tile wallAt(Vector2i position) {
-        if (this is null) return null;
-        Vector2i tilePos = position.wrapTilePos;
-        Vector2i chunkPos = position.tilePosToChunkPos;
-        if (this[chunkPos.X, chunkPos.Y] is null) return null;
-        return this[chunkPos.X, chunkPos.Y].walls[tilePos.X][tilePos.Y];
+        return provider.wallAt(position);
+    }
+
+
+    Player getPlayer() {
+        return cast(Player)player;
     }
 
     Vector2i getTileAtScreen(Vector2 mousePosition) {
@@ -176,21 +118,20 @@ public:
         return this[chunkPos.X, chunkPos.Y] !is null;
     }
 
-    void invalidateLightArea(Vector2i chunkPos, int adjX, int adjY) {
-        Vector2i[] adj = getAdjacent(chunkPos, adjX, adjY);
-        foreach(chunk; adj) {
-            lighting.notifyUpdate(chunk);
-        }
-    }
+    // void invalidateLightArea(Vector2i chunkPos, int adjX, int adjY) {
+    //     Vector2i[] adj = getAdjacent(chunkPos, adjX, adjY);
+    //     foreach(chunk; adj) {
+    //         lighting.notifyUpdate(chunk);
+    //     }
+    // }
 
     void init() {
-        generator = new WorldGenerator(this);
         camera = new Camera2D(Vector2(0f, 0f));
         camera.Zoom = 1.6f;
 
         player = new Player(this);
-        updateChunks();
         loadWorld();
+        provider = new ChunkProvider(this);
     }
 
     void update(GameTimes gameTime) {
@@ -205,7 +146,7 @@ public:
         }
 
         camera.Origin = Vector2(WINDOW_BOUNDS.Width/2, WINDOW_BOUNDS.Height/2);
-        updateChunks();
+        provider();
     }
 
     void draw(SpriteBatch spriteBatch) {
@@ -237,20 +178,15 @@ public:
 
             player.drawAfter(spriteBatch);
         spriteBatch.End();
-        spriteBatch.Begin(SpriteSorting.Deferred, Blending.NonPremultiplied, Sampling.LinearClamp, RasterizerState.Default, null, camera);
-            foreach(chunk; getChunks) {
-                chunk.drawShadowMap(spriteBatch);
-            }
-        spriteBatch.End();
+        // spriteBatch.Begin(SpriteSorting.Deferred, Blending.NonPremultiplied, Sampling.LinearClamp, RasterizerState.Default, null, camera);
+        //     foreach(chunk; getChunks) {
+        //         chunk.drawShadowMap(spriteBatch);
+        //     }
+        // spriteBatch.End();
     }
 
     void save() {
-        foreach(_, chunk; getChunks) {
-            if (chunk.modified) {
-                // TODO: Save chunk if changed
-                chunk.save();
-            }
-        }
+        provider.save();
         this.saveWorld();
     }
 }
