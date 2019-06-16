@@ -4,7 +4,7 @@ import game.world;
 import game.chunk;
 import polyplex;
 import config;
-
+import containers.list;
 
 class ShadowMap(size_t WIDTH, size_t HEIGHT, size_t SCALE = CHUNK_SHADOW_SCALE) {
 package(game.lighting):
@@ -12,30 +12,42 @@ package(game.lighting):
 
     bool isLit;
 
-    bool isShadowMappingRunning;
+    bool isUpdating;
 
-    Task!(genShadowMapTex, thisType)* shadowMapTask;
+    bool isFinished;
 
+    float[WIDTH/SCALE][HEIGHT/SCALE] shadowMapData;
     float[WIDTH][HEIGHT] shadowMap;
 
     ubyte[(WIDTH*4)*HEIGHT] shadowMapTextureData;
 
+    ubyte[(WIDTH*4)*HEIGHT] shadowMapTextureDataTMP;
+
     Texture2D shadowMapTexture;
 
     Color TRC;
+
+    void genShadowMapFromData() {
+        foreach(ix; 0..WIDTH/SCALE) {
+            foreach(iy; 0..HEIGHT/SCALE) {
+                static foreach(x; 0..SCALE) {
+                    static foreach(y; 0..SCALE) {
+                        shadowMap[(ix*SCALE)+x][(iy*SCALE)+y] = shadowMapData[ix][iy];
+                    }
+                }
+            }
+        }
+    }
+
 public:
 
     float getLight(Vector2i at) {
-        return shadowMap[at.X*SCALE][at.Y*SCALE];
+        return shadowMapData[at.X][at.Y];
     }
 
     void setLight(Vector2i at, float light) {
         isLit = true;
-        static foreach(x; 0..SCALE) {
-            static foreach(y; 0..SCALE) {
-               shadowMap[(at.X*SCALE)+x][(at.Y*SCALE)+y] = light;
-            }
-        }
+        shadowMapData[at.X][at.Y] = light;
     }
 
     this() {
@@ -54,47 +66,39 @@ public:
         }
     }
 
-    /++
-        Starts generating the shadow mapping
-    +/
-    void generate() {
-        shadowMapTask = task!genShadowMapTex(this);
-        taskPool.put(shadowMapTask);
+    bool busy() {
+        return isUpdating && !isFinished;
+    }
+
+    void start() {
+        isUpdating = true;
+        isFinished = false;
     }
 
     /++
         Updates the texture and finishes the shadow mapping.
     +/
     void updateTexture() {
-        if (done) {
+        if (isUpdating && isFinished) {
+            this.shadowMapTextureData[] = this.shadowMapTextureDataTMP;
             shadowMapTexture.UpdatePixelData(this.shadowMapTextureData);
             finish();
         }
     }
 
-    bool lit() {
-        return isLit;
-    }
-
     /++
-        Finishes off the shadowmap generation by disposing of the task.
+        Mark changes as finished
     +/
     void finish() {
-        shadowMapTask = null;
+        if (isFinished) {
+            isUpdating = false;
+            isFinished = false;
+        }
+        isFinished = true;
     }
 
-    /++
-        Returns true if the shadowmap is done generating
-    +/
-    bool done() {
-        return (shadowMapTask !is null && shadowMapTask.done() && !isShadowMappingRunning);
-    }
-
-    /++
-        Returns true if the shadowmap is busy being generated
-    +/
-    bool busy() {
-        return (shadowMapTask !is null && (!shadowMapTask.done() || isShadowMappingRunning));
+    bool lit() {
+        return isLit;
     }
 
     /++
@@ -104,6 +108,11 @@ public:
         foreach(x; 0..WIDTH) {
             foreach(y; 0..HEIGHT) {
                 shadowMap[x][y] = 0f;
+            }
+        }
+        foreach(x; 0..WIDTH/SCALE) {
+            foreach(y; 0..HEIGHT/SCALE) {
+                shadowMapData[x][y] = 0f;
             }
         }
         if (fclear) {
@@ -116,29 +125,115 @@ public:
 
 }
 
+class ShadowMapper(T) {
+private:
+    size_t nextUp;
+    bool shouldStop;
+    List!T[] toUpdate;
+    Task!(shadowMapperTask, ShadowMapper, int)* shdMgrTask;
+
+    int aliveMappers;
+
+    /// Synchronized frontend for popFront.
+    T popFront(int owner) {
+        synchronized {
+            return toUpdate[owner].popFront;
+        }
+    }
+
+    void advanceNU() {
+        synchronized {
+            nextUp = (nextUp+1)%toUpdate.length;
+        }
+    }
+public:
+
+    void notifyUpdate(T shadow) {
+        foreach(bucket; toUpdate) {
+            if (bucket.contains(shadow)) return;
+        }
+        toUpdate[nextUp].add(shadow);
+        advanceNU();
+    }
+
+    void start(int count = 4) {
+        if (shdMgrTask is null) {
+            toUpdate = new List!T[](count);
+            shouldStop = false;
+            foreach(i; 0..count) {
+                aliveMappers++;
+                taskPool.put(task!(shadowMapperTask, ShadowMapper!T, int)(this, i));
+            }
+        }
+        if (shdMgrTask !is null && shdMgrTask.done()) {
+            shdMgrTask = null;
+        }
+    }
+
+    void stop() {
+        shouldStop = true;
+        while (aliveMappers > 0) {
+            import core.thread : Thread;
+            import std.datetime : Duration, msecs;
+            Thread.sleep(50.msecs);
+        }
+    }
+}
+
+void shadowMapperTask(T)(ref ShadowMapper!T self, int id) {
+    Logger.Success("Started ShadowMapper Task ({0})...", id);
+    import core.thread : Thread;
+    import std.datetime : Duration, msecs;
+    int msgTimeout = 100;
+    while(!self.shouldStop) {
+        msgTimeout--;
+        if (self.toUpdate[id].count > 0) {
+            T shadowMap = self.popFront(id);
+            // If it's busy, push it to the back for later...
+            if (shadowMap.busy) self.notifyUpdate(shadowMap);
+
+            // Otherwise, start mapping
+            genShadowMapTex(shadowMap);
+
+        
+        } else Thread.sleep(50.msecs);
+        if (msgTimeout <= 0) {
+            Logger.Info("<ShadowMapper:{0}> Mapping (0 out of {1})...", id, self.toUpdate[id].count);
+            msgTimeout = 100;
+        }
+    }
+    Logger.Info("Stopped ShadowMapper Task... ({0})...", id);
+    self.aliveMappers--;
+}
+
 /++
     Generate a shadow map texture from a chunk in a world.
 +/
-void genShadowMapTex(T)(ref T shmap) {
-    shmap.isShadowMappingRunning = true;
+void genShadowMapTex(T)(T shmap) {
+    shmap.start();
 
-    /// Blur the shadowmap
+    // Generate the visual shadow map from the shadow map data.
+    shmap.genShadowMapFromData();
+
+    // Blur the shadowmap
     blurShadowMap(shmap.shadowMap, 4);
 
-    /// Set the texture data
+    // Set the texture data
     int ex = 0;
     foreach(x; 0..CHUNK_SHADOW_SIZE) {
         foreach(y; 0..CHUNK_SHADOW_SIZE) {
-            shmap.shadowMapTextureData[ex] = 0;
-            shmap.shadowMapTextureData[ex+1] = 0;
-            shmap.shadowMapTextureData[ex+2] = 0;
-            shmap.shadowMapTextureData[ex+3] = cast(ubyte)((1f-shmap.shadowMap[y][x])*255);
+            shmap.shadowMapTextureDataTMP[ex] = 0;
+            shmap.shadowMapTextureDataTMP[ex+1] = 0;
+            shmap.shadowMapTextureDataTMP[ex+2] = 0;
+
+            float val = Mathf.Min(shmap.shadowMap[y][x], 1f);
+            shmap.shadowMapTextureDataTMP[ex+3] = cast(ubyte)((1f-val)*255);
             ex += 4;
         }
     }
 
     // Mark the map ready for rendering.
-    shmap.isShadowMappingRunning = false;
+    shmap.finish();
 }
 
 /++

@@ -53,5 +53,6 @@ public:
 
     void save() {
         world.save();
+        world.getLighting.stop();
     }
 }

@@ -211,7 +211,7 @@ public:
         this.onDestroy();
         chunk.modified = true;
         // TODO: update shadow mapping.
-        chunk.updateLighting();
+        chunk.updateLighting(1);
         if (!wall) {
             chunk.tiles[position.X][position.Y] = null;
             return;

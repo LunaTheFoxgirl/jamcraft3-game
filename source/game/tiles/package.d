@@ -7,6 +7,7 @@ public import game.tile;
 public import game.tiles.sandtile;
 public import game.tiles.sandstonetile;
 public import game.tiles.coaltile;
+public import game.tiles.glowsand;
 
 __gshared static Registry!Tile TileRegistry;
 
@@ -29,4 +30,5 @@ void initRegistry() {
     registerTile!SandTile();
     registerTile!SandstoneTile();
     registerTile!CoalTile();
+    registerTile!GlowsandTile();
 }

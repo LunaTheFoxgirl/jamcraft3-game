@@ -21,7 +21,7 @@ struct CollissionData {
 class Player : Entity {
 private:
 
-    int breakSpeed = 15;
+    int breakSpeed = 4;
     int placeSpeed = 10;
 
     SpriteFlip spriteFlip;
@@ -165,7 +165,7 @@ private:
         if (actionTimer == 0) {
             bool wall = state.IsKeyDown(Keys.LeftShift);
             if (Mouse.GetState().IsButtonPressed(MouseButton.Right)) {
-                placeTile(new SandTile(), tileAtScreen, wall);
+                placeTile(new GlowsandTile(), tileAtScreen, wall);
                 actionTimer = placeSpeed;
                 return;
             }

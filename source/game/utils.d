@@ -82,7 +82,7 @@ T[] getAdjacentEx(T)(T pos, int sx, int sy) if (IsVector!T) {
     T[] adjacent;
     foreach(x; 0..sx*2) {
         foreach(y; 0..sy*2) {
-            if (x == sx/2 && y = sy/2) continue;
+            if (x == sx/2 && y == sy/2) continue;
             adjacent ~= T(pos.X+(x-(sx/2)), pos.Y+(y-(sy/2)));
         }
     }

@@ -17,7 +17,7 @@ private:
     Chunk[Vector2i] chunks;
     Entity player;
     Entity[] entities;
-    LightingManager lighting;
+    LightingManager!ChunkShadowMap lighting;
 
     Rectangle effectiveViewport() {
         float px = (camera.Position.X-(camera.Origin.X/camera.Zoom));
@@ -110,11 +110,15 @@ public:
     Camera2D camera;
 
     this() {
-        lighting = new LightingManager(this);
+        lighting = new LightingManager!ChunkShadowMap(this);
         lighting.start();
     }
 
-    ref LightingManager getLighting() {
+    Player getPlayer() {
+        return cast(Player)player;
+    }
+
+    ref LightingManager!ChunkShadowMap getLighting() {
         return lighting;
     }
 
@@ -172,6 +176,13 @@ public:
         return this[chunkPos.X, chunkPos.Y] !is null;
     }
 
+    void invalidateLightArea(Vector2i chunkPos, int adjX, int adjY) {
+        Vector2i[] adj = getAdjacent(chunkPos, adjX, adjY);
+        foreach(chunk; adj) {
+            lighting.notifyUpdate(chunk);
+        }
+    }
+
     void init() {
         generator = new WorldGenerator(this);
         camera = new Camera2D(Vector2(0f, 0f));
@@ -226,7 +237,7 @@ public:
 
             player.drawAfter(spriteBatch);
         spriteBatch.End();
-        spriteBatch.Begin(SpriteSorting.Deferred, Blending.NonPremultiplied, Sampling.PointClamp, RasterizerState.Default, null, camera);
+        spriteBatch.Begin(SpriteSorting.Deferred, Blending.NonPremultiplied, Sampling.LinearClamp, RasterizerState.Default, null, camera);
             foreach(chunk; getChunks) {
                 chunk.drawShadowMap(spriteBatch);
             }

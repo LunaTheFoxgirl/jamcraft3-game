@@ -13,6 +13,8 @@ import game.lighting.lman;
 import game.lighting.smap;
 import config;
 
+alias ChunkShadowMap = ShadowMap!(CHUNK_SHADOW_SIZE, CHUNK_SHADOW_SIZE);
+
 class Chunk {
 private:
     @nonPacked
@@ -60,7 +62,7 @@ public:
 
     /// The shadow mapping associated with the chunk
     @nonPacked
-    ShadowMap!(CHUNK_SHADOW_SIZE, CHUNK_SHADOW_SIZE) shadowMap;
+    ChunkShadowMap shadowMap;
 
     void draw(SpriteBatch spriteBatch, Rectangle viewport) {
         foreach(row; tiles) {
@@ -110,8 +112,12 @@ public:
         return false;
     }
 
-    void updateLighting() {
-        world.getLighting.notifyUpdate(position);
+    void updateLighting(int adj = 0) {
+        if (adj > 0) {
+            world.invalidateLightArea(position, adj, adj);
+        } else {
+            world.getLighting.notifyUpdate(position);
+        }
     }
 
     bool placeTile(T)(T tile, Vector2i at, int healAmount = 10) {
