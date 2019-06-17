@@ -20,7 +20,13 @@ public:
 
     void add(string tex) {
         debug {
-            cachedItems[tex] = content.Load!T("!raw/"~tex~".png");
+            static if (is(T : Texture2D)) {
+                cachedItems[tex] = content.Load!T("!raw/"~tex~".png");
+            } else static if (is(T : Music)) {
+                cachedItems[tex] = content.Load!T("!raw/"~tex~".ogg");
+            } else static if (is(T : SoundEffect)) {
+                cachedItems[tex] = content.Load!T("!raw/"~tex~".ogg");
+            }
         } else {
             cachedItems[tex] = content.Load!T(tex);
         }

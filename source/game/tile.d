@@ -48,6 +48,12 @@ private:
     @nonPacked
     static Texture2D breakAnim;
 
+    @nonPacked
+    string name;
+
+    @nonPacked
+    string description;
+
     Rectangle getBreakAnimStep() {
         float percentage = 0f;
         if (maxHealth > 0) {
@@ -91,6 +97,21 @@ protected:
     @nonPacked
     string tileId;
     
+
+    /++
+        Set name shown as Item
+    +/
+    final void setName(string name) {
+        this.name = name;
+    }
+
+    /++
+        Set description shown as Item
+    +/
+    final void setDescription(string description) {
+        this.description = description;
+    }
+
     /++
         Set how much light this emits.
     +/
@@ -118,14 +139,6 @@ protected:
     final void setHealth(int health) {
         this.maxHealth = health;
         this.health = maxHealth;
-    }
-
-    final string getTextureName() {
-        return this.texture;
-    }
-
-    final string getWallTextureName() {
-        return this.wallTexture;
     }
 
     final void setTexture(string name) {
@@ -179,13 +192,6 @@ protected:
     void onLoading(ref Unpacker unpacker) { }
 
 public:
-    final bool isCollidable() {
-        return collidable;
-    }
-
-    final string getId() {
-        return tileId;
-    }
 
     /// Position of tile in chunk
     @nonPacked
@@ -205,6 +211,38 @@ public:
 
     this(string tileId) {
         this.tileId = tileId;
+    }
+
+    final bool isCollidable() {
+        return collidable;
+    }
+
+    final string getId() {
+        return tileId;
+    }
+    
+    final string getName() {
+        return name;
+    }
+
+    final string getDescription() {
+        return description;
+    }
+
+    final float getLightBlock() {
+        return lightBlocking;
+    }
+
+    final float getEmission() {
+        return lightEmission;
+    }
+
+    final string getTextureName() {
+        return this.texture;
+    }
+
+    final string getWallTextureName() {
+        return this.wallTexture;
     }
 
     final void draw(SpriteBatch spriteBatch) {
@@ -242,14 +280,6 @@ public:
     final void playInitAnimation() {
         // Apply the lil' cute effect.
         hitScaleEff = -(HIT_SCALE_EFF_MAX*2);
-    }
-
-    final float getLightBlock() {
-        return lightBlocking;
-    }
-
-    final float getEmission() {
-        return lightEmission;
     }
 
     /++

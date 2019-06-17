@@ -1,6 +1,8 @@
 module game.items;
-import game.item;
+public import game.item;
+public import game.items.itemtile;
 import engine.registry;
+import polyplex;
 
 __gshared static Registry!Item ItemRegistry;
 
@@ -16,6 +18,7 @@ private void registerItem(T)() if (is(T : Item)) {
     ItemRegistry.register!T(name);
 }
 
-void initRegistry() {
+void initItemRegistry() {
     ItemRegistry = new Registry!Item();
+    registerItem!ItemTile();
 }

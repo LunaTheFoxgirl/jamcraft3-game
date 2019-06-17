@@ -23,7 +23,7 @@ public:
         Index the container.
     +/
     ref ItemStack opIndex(uint x, uint y) {
-        return slots[x][y];
+        return slots[y][x];
     }
 
     /++
@@ -51,17 +51,23 @@ public:
             return null;
         }
 
+        // Fill stack
         if (this[x, y].sharesType(stack)) {
-            this[x, y].combineStack(stack);
+            return this[x, y].combineStack(stack);
         }
+
+        // Swap stacks
+        ItemStack oldStack = this[x, y];
+        this[x, y] = stack;
+        return oldStack;
     }
 
     /++
         Update the container (by removing any empty item stacks)
     +/
     void update() {
-        foreach(x; 0..width) {
-            foreach(y; 0..height) {
+        foreach(x; 0..slotsX) {
+            foreach(y; 0..slotsY) {
                 if (this[x, y] is null) continue;
                 if (this[x, y].getCount() <= 0) {
                     this[x, y] = null;

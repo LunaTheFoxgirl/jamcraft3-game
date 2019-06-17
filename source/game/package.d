@@ -2,6 +2,7 @@ module game;
 import polyplex;
 import engine.cman;
 import game.tiles;
+import game.items;
 import game.tile;
 import game.chunk;
 import game.world;
@@ -24,18 +25,21 @@ public:
     }
 
     override void LoadContent() {
+        
         // Load content here with Content.Load!T
         // You can prefix the path in the Load function to load a raw file.
         setupManagers(Content);
 
         initMusicMgr();
-
-        registerTileIOFor!Tile();
-        registerChunkIO();
         initTileRegistry();
+        initItemRegistry();
 
         WORLD = new World();
         WORLD.init();
+
+
+        registerTileIOFor!Tile();
+        registerChunkIO();
     }
 
     override void UnloadContent() {

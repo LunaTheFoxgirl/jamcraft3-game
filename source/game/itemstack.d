@@ -1,5 +1,7 @@
 module game.itemstack;
 import game.item;
+import game.entity;
+import polyplex;
 
 class ItemStack {
 private:
@@ -16,12 +18,16 @@ public:
         this.count = count;
     }
 
+    ref Item getItem() {
+        return item;
+    }
+
     int getCount() {
         return count;
     }
 
     bool sharesType(ItemStack otherStack) {
-        return item.getId != otherStack.item.getId();
+        return item.getId == otherStack.item.getId();
     }
 
     ItemStack combineStack(ItemStack otherStack) {
@@ -60,8 +66,8 @@ public:
     /++
         Use item at position in world
     +/
-    bool use(Vector2i at, bool alt) {
-        bool used = item.use(at, alt);
+    bool use(Entity user, Vector2i at, bool alt) {
+        bool used = item.use(user, at, alt);
         if (used && item.getConsumable()) count--;
         return used;
     }

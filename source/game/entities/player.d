@@ -3,6 +3,8 @@ import game.entity;
 import game.utils;
 import game.tiles;
 import game.container;
+import game.items;
+import game.itemstack;
 import engine.music;
 import polyplex;
 import config;
@@ -32,7 +34,7 @@ private:
         INPUT HANDLING
     +/
     KeyboardState state;
-
+    MouseState mouseState;
 
 
     /++
@@ -188,7 +190,7 @@ private:
         tileAtScreen = world.getTileAtScreen(Mouse.Position);
 
         if (state.IsKeyDown(Keys.LeftShift)) {
-            float scroll = Mouse.GetState().Position.Z/20;
+            float scroll = mouseState.Position.Z/20;
             world.camera.Zoom += scroll;
             if (world.camera.Zoom < 0.9f) {
                 world.camera.Zoom = 0.9f;
@@ -200,19 +202,30 @@ private:
 
         // Ingame action start here, we have timeouts for those.
         if (!readyForAction) return;
-        if (!withinReach(tileAtScreen)) return;
-        
-        bool wall = state.IsKeyDown(Keys.LeftShift);
-        if (Mouse.GetState().IsButtonPressed(MouseButton.Right)) {
-            placeTile(new CactusTile(), tileAtScreen, wall);
-            actionTimer = stats.swingSpeedPlace;
-            return;
+        if (mouseState.Position.Z == -1 || mouseState.Position.Z == 1) {
+            selectedSlot += cast(uint)mouseState.Position.Z;
+            if (selectedSlot < 0) {
+                selectedSlot = 9;
+            }
+            selectedSlot %= 10;
+            Item item = inventory[selectedSlot, 0] !is null ? inventory[selectedSlot, 0].getItem() : null;
+            string name = item !is null ? item.getName() : "Bare Hands";
+            string description = item !is null ? item.getDescription() : "You can barely dig with these...";
+            Logger.Info("Changed to hotbar slot {0} ({1}: {2})...", selectedSlot, name, description);
+            actionTimer = 5;
         }
 
-        if (Mouse.GetState().IsButtonPressed(MouseButton.Left)) {
-            if (attackBlock(tileAtScreen, wall)) {
+        // Using items requires them to be in your arm's reach.
+        if (!withinReach(tileAtScreen)) return;
+        if (mouseState.IsButtonPressed(MouseButton.Right) || mouseState.IsButtonPressed(MouseButton.Left)) {
+            bool alt = mouseState.IsButtonPressed(MouseButton.Right);
+            if (inventory[selectedSlot, 0] !is null) {
+                if (inventory[selectedSlot, 0].use(this, tileAtScreen, alt)) {
+                    actionTimer = inventory[selectedSlot, 0].getItem().getUseTime();
+                }
+            } else {
+                attackBlock(tileAtScreen, alt);
                 actionTimer = stats.swingSpeedBreak;
-                return;
             }
         }
         
@@ -230,6 +243,9 @@ private:
 public:
     this(World world) {
         super(world, Vector2(0f, 0f));
+        inventory = new Container!(10, 6)();
+        inventory[1, 0] = new ItemStack(new ItemTile()("sandstone"), 999);
+        inventory[2, 0] = new ItemStack(new ItemTile()("sand"), 999);
     }
 
     override Rectangle hitbox() {
@@ -242,6 +258,7 @@ public:
 
     override void update(GameTimes gameTime) {
         state = Keyboard.GetState();
+        mouseState = Mouse.GetState();
         if (actionTimer > 0) {
             actionTimer--;
         }
@@ -250,6 +267,8 @@ public:
         handleMovement();
         handleInteraction();
         handleMusic();
+
+        inventory.update();
 
         world.camera.Position = this.hitbox.Center;
     }

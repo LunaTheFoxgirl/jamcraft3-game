@@ -2,6 +2,7 @@ module game.item;
 import polyplex;
 import msgpack;
 import engine.cman;
+import game.entity;
 
 class Item {
 private:
@@ -23,49 +24,56 @@ private:
     string texture;
 
     @nonPacked
-    string name;
+    string name = "Unnamed Item";
 
     @nonPacked
-    string description;
+    string description = "A fancy description goes here!";
+
+    @nonPacked
+    int useTime = 25;
 
     Texture2D getTexture() {
         return TEXTURES["items/item_"~texture];
     }
 
 protected:
-    void setSubId(string subId) {
+    final void setSubId(string subId) {
         if (!hasSubTypes) return;
         this.subId = subId;
     }
 
-    void setName(string name) {
+    final void setName(string name) {
         this.name = name;
     }
 
-    void setDescription(string description) {
+    final void setDescription(string description) {
         this.description = description;
     }
 
-    void setHasSubTypes(bool hasSubTypes) {
+    final void setUseTime(int useTime) {
+        this.useTime = useTime;
+    }
+
+    final void setHasSubTypes(bool hasSubTypes) {
         this.hasSubTypes = hasSubTypes;
         if (!hasSubTypes) {
             subId = null;
         }
     }
 
-    void setTexture(string name) {
+    final void setTexture(string name) {
         this.texture = name;
     }
 
-    void setMaxStack(ushort size) {
+    final void setMaxStack(ushort size) {
         maxStack = size;
     }
 
-    void setConsumable(bool consumable) {
+    final void setConsumable(bool consumable) {
         this.consumable = consumable;
     }
 
-    bool onUse(Vector2i at, bool alt) {
+    bool onUse(Entity user, Vector2i at, bool alt) {
         return false;
     }
 
@@ -83,6 +91,10 @@ public:
     final string getId() {
         if (subId !is null) return id~":"~subId;
         else return id;
+    }
+
+    final string getSubId() {
+        return subId;
     }
 
     final ushort getMaxStack() {
@@ -105,8 +117,12 @@ public:
         return description;
     }
 
-    final bool use(Vector2i at, bool alt) {
-        return onUse(at, alt);
+    final int getUseTime() {
+        return useTime;
+    }
+
+    final bool use(Entity user, Vector2i at, bool alt) {
+        return onUse(user, at, alt);
     }
 
     final void render(Rectangle area, SpriteBatch spriteBatch) {

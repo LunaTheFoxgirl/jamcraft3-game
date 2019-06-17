@@ -7,6 +7,8 @@ public:
     this() {
         super("cactusbase");
         setTexture("cactusbase");
+        setName("Cactus Base");
+        setDescription("Used to make a crafting table");
         setStrength(1);
         setHealth(20);
         setCollidable(false);

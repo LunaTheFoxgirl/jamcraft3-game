@@ -6,6 +6,8 @@ public:
     this() {
         super("coal");
         setTexture("coal");
+        setName("Coal Ore");
+        setDescription("It's p chunky");
         setStrength(10);
         setHealth(20);
     }
