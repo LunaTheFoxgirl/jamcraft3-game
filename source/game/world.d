@@ -181,6 +181,8 @@ public:
                 entity.drawAfter(spriteBatch);
             }
 
+        spriteBatch.End();
+        spriteBatch.Begin();
             player.drawAfter(spriteBatch);
         spriteBatch.End();
         // spriteBatch.Begin(SpriteSorting.Deferred, Blending.NonPremultiplied, Sampling.LinearClamp, RasterizerState.Default, null, camera);

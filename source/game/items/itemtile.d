@@ -46,6 +46,7 @@ public:
     override void onInit(string tileId) {
         Tile t = TileRegistry.createNew(tileId);
 
+        setConsumable(true);
         setHasSubTypes(true);
         setSubId(tileId);
         setTexture(t.getTextureName());

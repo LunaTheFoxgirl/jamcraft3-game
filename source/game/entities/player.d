@@ -246,6 +246,9 @@ public:
         inventory = new Container!(10, 6)();
         inventory[1, 0] = new ItemStack(new ItemTile()("sandstone"), 999);
         inventory[2, 0] = new ItemStack(new ItemTile()("sand"), 999);
+        inventory[3, 0] = new ItemStack(new ItemTile()("cactus"), 999);
+        inventory[4, 0] = new ItemStack(new ItemTile()("cactusbase"), 1);
+        inventory[5, 0] = new ItemStack(new ItemTile()("glowsand"), 999);
     }
 
     override Rectangle hitbox() {
@@ -277,7 +280,24 @@ public:
         spriteBatch.Draw(TEXTURES["entities/entity_player"], this.renderbox, TEXTURES["entities/entity_player"].Size, Color.White, spriteFlip);
     }
 
+    void renderInvCircle(SpriteBatch spriteBatch, Rectangle rect, int i) {
+        int wEx = rect.Width/2;
+        int hEx = rect.Height/2;
+        Rectangle xRect = new Rectangle(rect.X-wEx, rect.Y-hEx, rect.Width*2, rect.Height*2);
+        spriteBatch.Draw(TEXTURES["ui/ui_selectitem"], xRect, TEXTURES["ui/ui_selectitem"].Size, Color.White);
+        if (inventory[i, 0] !is null) inventory[i, 0].getItem().render(rect, spriteBatch);
+    }
+
     override void drawAfter(SpriteBatch spriteBatch) {
+        int offset = 16;
+        foreach(i; 0..10) {
+            if (i == selectedSlot) {
+                renderInvCircle(spriteBatch, new Rectangle(offset-2, 16-2, 32+4, 32+4), i);
+            } else {
+                renderInvCircle(spriteBatch, new Rectangle(offset, 16, 32, 32), i);
+            }
+            offset += 64;
+        }
         //spriteBatch.Draw(TEXTURES["tiles/tile_sand"], new Rectangle(tileAtScreen.X*BLOCK_SIZE, tileAtScreen.Y*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE), TEXTURES["tiles/tile_sand"].Size, Color.Blue);
     }
 }

@@ -15,11 +15,15 @@ public:
 
     this(Item item, int count) {
         this.item = item;
-        this.count = count;
+        setCount(count);
     }
 
     ref Item getItem() {
         return item;
+    }
+
+    void setCount(int count) {
+        this.count = count <= item.getMaxStack() ? count : item.getMaxStack();
     }
 
     int getCount() {
