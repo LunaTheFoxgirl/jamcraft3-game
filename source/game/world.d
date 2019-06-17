@@ -61,7 +61,7 @@ private:
         import std.path;
 
         WorldSv saveInfo;
-        saveInfo.playerPosition = Vector2(Mathf.Floor(player.position.X), Mathf.Floor(player.position.Y)-4f);
+        saveInfo.playerPosition = Vector2(Mathf.Floor(player.position.X), Mathf.Floor(player.position.Y)-8f);
         saveInfo.cameraZoom = camera.Zoom;
 
         if (!exists("world/")) mkdir("world/");
@@ -70,6 +70,10 @@ private:
 
 public:
     Camera2D camera;
+
+    this() {
+        provider = new ChunkProvider(this);
+    }
 
     ref ChunkProvider getProvider() {
         return provider;
@@ -136,7 +140,6 @@ public:
 
         player = new Player(this);
         loadWorld();
-        provider = new ChunkProvider(this);
     }
 
     void update(GameTimes gameTime) {

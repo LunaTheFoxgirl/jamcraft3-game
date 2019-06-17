@@ -24,7 +24,15 @@ public:
         this.position = position;
     }
 
-    Vector2 position;
+    Vector2 position = Vector2(0f, 0f);
+    Vector2 motion = Vector2(0f, 0f);
+
+    Vector2 feet() {
+        return Vector2(
+            this.hitbox.Center.X,
+            cast(float)this.hitbox.Bottom-0.5f
+        );
+    }
 
     Vector2i tilePosition() {
         return Vector2i(cast(int)position.X/TILE_SIZE, cast(int)position.Y/TILE_SIZE);

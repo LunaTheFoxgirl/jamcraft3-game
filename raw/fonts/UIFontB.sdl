@@ -1,0 +1,8 @@
+size 18
+font "/usr/share/fonts/TTF/Ubuntu-B.ttf"
+
+characters {
+    entry {
+        range start=0 end=128
+    }
+}

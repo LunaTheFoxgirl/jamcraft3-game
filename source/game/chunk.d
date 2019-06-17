@@ -156,12 +156,14 @@ public:
     void setTile(T)(T tile, Vector2i at, bool wall) {
         if (wall) {
             this.walls[at.X][at.Y] = tile;
-            this.walls[at.X][at.Y](at, this);
+            this.walls[at.X][at.Y](at, true, this);
             this.walls[at.X][at.Y].playInitAnimation();
+            this.walls[at.X][at.Y].updateSurrounding(at);
         } else {
             this.tiles[at.X][at.Y] = tile;
-            this.tiles[at.X][at.Y](at, this);
+            this.tiles[at.X][at.Y](at, false, this);
             this.tiles[at.X][at.Y].playInitAnimation();
+            this.tiles[at.X][at.Y].updateSurrounding(at);
         }
         this.modified = true;
     }
@@ -192,8 +194,8 @@ Chunk load(Vector2i position, World world) {
     ch.world = world;
     foreach(x; 0..CHUNK_SIZE) {
         foreach(y; 0..CHUNK_SIZE) {
-            if (ch.tiles[x][y] !is null) ch.tiles[x][y](Vector2i(x, y), ch);
-            if (ch.walls[x][y] !is null) ch.walls[x][y](Vector2i(x, y), ch);
+            if (ch.tiles[x][y] !is null) ch.tiles[x][y](Vector2i(x, y), false, ch);
+            if (ch.walls[x][y] !is null) ch.walls[x][y](Vector2i(x, y), true, ch);
         }
     }
     return ch;

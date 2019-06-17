@@ -18,4 +18,13 @@ public:
         if (wall) return false;
         return WORLD.tileAt(Vector2i(position.X, position.Y+1)) !is null;
     }
+
+    override void onUpdate() {
+        Vector2i inWorld = getWorldPosition();
+
+        if (WORLD.tileAt(Vector2i(inWorld.X, inWorld.Y+1)) is null) {
+            Logger.Info("Breaking cacti!");
+            this.breakTile();
+        }
+    }
 }

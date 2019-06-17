@@ -7,6 +7,7 @@ import game.tile;
 import game.chunk;
 import game.world;
 import engine.music;
+import std.format;
 
 private __gshared static DunesGame gameImpl;
 
@@ -16,12 +17,17 @@ ref WindowBounds WINDOW_BOUNDS() {
 
 public class DunesGame : Game {
 public:
+    SpriteFont font;
+
+    Vector2 msCounterPos;
+
     override void Init() {
         // Enable VSync
         Window.VSync = VSyncState.LateTearing;
         Window.AllowResizing = true;
         Window.Title = "Dunes";
         gameImpl = this;
+        this.CountFPS = true;
     }
 
     override void LoadContent() {
@@ -40,6 +46,9 @@ public:
 
         registerTileIOFor!Tile();
         registerChunkIO();
+
+        font = Content.Load!SpriteFont("fonts/UIFont");
+        msCounterPos = Vector2(font.MeasureString("XX ms").X, 4);
     }
 
     override void UnloadContent() {
@@ -54,6 +63,16 @@ public:
     override void Draw(GameTimes gameTime) {
         Renderer.ClearColor(Color.CornflowerBlue);
         WORLD.draw(sprite_batch);
+
+        sprite_batch.Begin();
+
+        sprite_batch.DrawString(
+            font, 
+            "%dms".format(cast(int)this.Frametime()), 
+            Vector2(Game.Window.ClientBounds.Width-msCounterPos.X, msCounterPos.Y), 
+            Color.White, 
+            1f);
+        sprite_batch.End();
     }
 
     void save() {

@@ -26,6 +26,8 @@ public:
                 cachedItems[tex] = content.Load!T("!raw/"~tex~".ogg");
             } else static if (is(T : SoundEffect)) {
                 cachedItems[tex] = content.Load!T("!raw/"~tex~".ogg");
+            }else static if (is(T : SpriteFont)) {
+                cachedItems[tex] = content.Load!T(tex);
             }
         } else {
             cachedItems[tex] = content.Load!T(tex);
@@ -38,9 +40,11 @@ public:
 }
 
 __gshared static ContentCache!Texture2D TEXTURES;
+__gshared static ContentCache!SpriteFont FONTS;
 __gshared static ContentCache!Music MUSIC;
 
 void setupManagers(ContentManager mgr) {
     TEXTURES = ContentCache!Texture2D(mgr);
     MUSIC = ContentCache!Music(mgr);
+    FONTS = ContentCache!SpriteFont(mgr);
 }

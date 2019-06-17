@@ -1,0 +1,8 @@
+size 16
+font "/usr/share/fonts/TTF/Ubuntu-R.ttf"
+
+characters {
+    entry {
+        range start=32 end=128
+    }
+}

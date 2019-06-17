@@ -4,19 +4,20 @@ import engine.registry;
 public import polyplex.math;
 public import game.world;
 public import game.chunk;
+public import game.entity;
 public import game.tile;
 public import game.tiles.sandtile;
 public import game.tiles.sandstonetile;
 public import game.tiles.coaltile;
-public import game.tiles.glowsand;
+public import game.tiles.cactusplatform;
 public import game.tiles.cactusbase;
 public import game.tiles.cactus;
 
 __gshared static Registry!Tile TileRegistry;
 
-Tile createTile(string id, Vector2i position, Chunk chunk = null) {
+Tile createTile(string id, Vector2i position, bool wall, Chunk chunk = null) {
     Tile t = TileRegistry.createNew(id);
-    t(position, chunk);
+    t(position, wall, chunk);
     return t;
 }
 
@@ -33,7 +34,7 @@ void initTileRegistry() {
     registerTile!SandTile();
     registerTile!SandstoneTile();
     registerTile!CoalTile();
-    registerTile!GlowsandTile();
+    registerTile!CactusPlatformTile();
     registerTile!CactusBaseTile();
     registerTile!CactusTile();
 }

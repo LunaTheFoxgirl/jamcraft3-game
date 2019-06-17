@@ -21,6 +21,7 @@ recipe name="Tiles" {
     texture "tiles/tile_coal.png" type="png" 
     texture "tiles/tile_cactusbase.png" type="png" 
     texture "tiles/tile_cactus.png" type="png" 
+    texture "tiles/tile_cactusplatform.png" type="png" 
 }
 
 recipe name="UI" {
@@ -39,4 +40,9 @@ recipe name="Music" {
     audio "music/mus_day.ogg" type="ogg"
     audio "music/mus_night.ogg" type="ogg"
     audio "music/mus_underground.ogg" type="ogg"
+}
+
+recipe name="Fonts" {
+    font "fonts/UIFont.sdl"
+    font "fonts/UIFontB.sdl"
 }

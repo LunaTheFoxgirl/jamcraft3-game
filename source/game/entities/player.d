@@ -58,17 +58,9 @@ private:
     +/
     Vector2i chunkAtScreen;
     Vector2i tileAtScreen;
-    Vector2 motion = Vector2(0f, 0f);
     int jumpTimer;
     int actionTimer;
     bool grounded;
-
-    Vector2 feet() {
-        return Vector2(
-            this.hitbox.Center.X,
-            cast(float)this.hitbox.Bottom-0.5f
-        );
-    }
 
     Vector2i feetBlock(Vector2 offset = Vector2(0, 0)) {
         return Vector2i(cast(int)(feet.X+offset.X), cast(int)(feet.Y+offset.Y)).toTilePos;
@@ -101,6 +93,7 @@ private:
         col: foreach(adjacent; centerTile.getAdjacent(12, 12)) {
             Tile b = world.tileAt(adjacent);
             if (b !is null && b.isCollidable()) {
+                if (!b.isCollidableWith(this)) continue;
                 Rectangle bAABB = b.hitbox;
                 v = calculateAABBCollissionX(this.hitbox, bAABB);
                 if (v != 0.0f) {
@@ -123,6 +116,7 @@ private:
         foreach(adjacent; centerTile.getAdjacent(12, 12)) {
             Tile b = world.tileAt(adjacent);
             if (b !is null && b.isCollidable()) {
+                if (!b.isCollidableWith(this)) continue;
                 Rectangle bAABB = b.hitbox;
                 v = calculateAABBCollissionY(this.hitbox, bAABB);
                 if (v < 0) {
@@ -264,7 +258,7 @@ public:
         inventory[2, 0] = new ItemStack(new ItemTile()("sand"), 999);
         inventory[3, 0] = new ItemStack(new ItemTile()("cactus"), 999);
         inventory[4, 0] = new ItemStack(new ItemTile()("cactusbase"), 1);
-        inventory[5, 0] = new ItemStack(new ItemTile()("glowsand"), 999);
+        inventory[5, 0] = new ItemStack(new ItemTile()("cactusplatform"), 999);
     }
 
     override Rectangle hitbox() {
@@ -290,6 +284,10 @@ public:
         inventory.update();
 
         world.camera.Position = this.hitbox.Center;
+
+        if (state.IsKeyDown(Keys.R)) {
+            this.position = Vector2(0, 0);
+        }
     }
 
     override void draw(SpriteBatch spriteBatch) {
@@ -297,11 +295,35 @@ public:
     }
 
     void renderInvCircle(SpriteBatch spriteBatch, Rectangle rect, int i) {
+        import std.array;
+        import std.format;
+        Vector2 measure;
         int wEx = rect.Width/2;
         int hEx = rect.Height/2;
         Rectangle xRect = new Rectangle(rect.X-wEx, rect.Y-hEx, rect.Width*2, rect.Height*2);
         spriteBatch.Draw(TEXTURES["ui/ui_selectitem"], xRect, TEXTURES["ui/ui_selectitem"].Size, Color.White);
+
         if (inventory[i, 0] !is null) inventory[i, 0].getItem().render(rect, spriteBatch);
+
+        if (inventory[i, 0] !is null) {
+            ItemStack items = inventory[i, 0];
+            string countStr = "%d".format(items.getCount());
+            measure = FONTS["fonts/UIFont"].MeasureString(countStr);
+            spriteBatch.DrawString(FONTS["fonts/UIFont"], countStr, Vector2(rect.Right-measure.X, rect.Bottom-measure.Y), Color.White, 1f);
+        }
+
+        if (xRect.Intersects(Mouse.Position)) {
+            string name = inventory[i, 0] !is null ? inventory[i, 0].getItem().getName() : "Bare Handed";
+            string desc = inventory[i, 0] !is null ? inventory[i, 0].getItem().getDescription() : "You can barely dig with these...";
+
+            Vector2 basePos = Vector2(mouseState.Position.X+16, mouseState.Position.Y+16);
+            measure = FONTS["fonts/UIFontB"].MeasureString("A");
+
+            spriteBatch.DrawString(FONTS["fonts/UIFontB"], name, basePos, Color.White, 1f);
+            foreach(offset, line; desc.split('\n')) {
+                spriteBatch.DrawString(FONTS["fonts/UIFont"], line, Vector2(basePos.X, basePos.Y+(measure.Y*(offset+2))), Color.White, 1f);
+            }
+        }
     }
 
     override void drawAfter(SpriteBatch spriteBatch) {

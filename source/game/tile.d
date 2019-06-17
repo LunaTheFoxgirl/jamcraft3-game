@@ -3,6 +3,8 @@ import polyplex;
 import engine.cman;
 import game.chunk;
 import game.tiles;
+import game.entity;
+import game.utils;
 import std.format;
 import engine.registry;
 import msgpack;
@@ -24,6 +26,9 @@ class Reservation {
 
 class Tile {
 private:
+    @nonPacked
+    bool isWall;
+
     @nonPacked
     World world;
     
@@ -190,6 +195,7 @@ protected:
 
     void onSaving(ref Packer packer) { }
     void onLoading(ref Unpacker unpacker) { }
+    void onUpdate() { }
 
 public:
 
@@ -215,6 +221,10 @@ public:
 
     final bool isCollidable() {
         return collidable;
+    }
+
+    bool isCollidableWith(Entity e) {
+        return true;
     }
 
     final string getId() {
@@ -318,18 +328,19 @@ public:
 
         // Decrease health.
         health -= digPower;
-        if (health <= 0) breakTile(wall);
+        if (health <= 0) breakTile();
     }
 
     /++
         Instantly breaks the tile
     +/
-    final void breakTile(bool wall = false) {
+    final void breakTile() {
+        scope (exit) updateSurrounding(position);
         this.onDestroy();
         chunk.modified = true;
         // TODO: update shadow mapping.
         chunk.updateLighting(1);
-        if (!wall) {
+        if (!isWall) {
             chunk.tiles[position.X][position.Y] = null;
             return;
         } 
@@ -340,30 +351,72 @@ public:
         }
     }
 
+    final Vector2i getWorldPosition() {
+        Vector2i chunkPos = chunk.position.chunkPosToTilePos;
+        return Vector2i(chunkPos.X+position.X, chunkPos.Y+position.Y);
+    }
+
+    final void updateSurrounding(Vector2i from) {
+        void updateIfExists(Tile t) {
+            if (t is null) return;
+            t.update();
+        }
+        if (chunk is null) return;
+
+        Vector2i worldSpace = getWorldPosition();
+
+        Vector2i up =    Vector2i(worldSpace.X, worldSpace.Y-1);
+        Vector2i down =  Vector2i(worldSpace.X, worldSpace.Y+1);
+        Vector2i left =  Vector2i(worldSpace.X-1, worldSpace.Y);
+        Vector2i right = Vector2i(worldSpace.X+1, worldSpace.Y);
+
+        if (getIsWall()) {
+            updateIfExists(WORLD.wallAt(up));
+            updateIfExists(WORLD.wallAt(down));
+            updateIfExists(WORLD.wallAt(left));
+            updateIfExists(WORLD.wallAt(right));
+        } else {
+            updateIfExists(WORLD.tileAt(up));
+            updateIfExists(WORLD.tileAt(down));
+            updateIfExists(WORLD.tileAt(left));
+            updateIfExists(WORLD.tileAt(right));
+        }
+    }
+
     final bool use() {
         return onUse();
     }
 
+    final void update() {
+        onUpdate();
+    }
+
+    /++
+        Gets wether this instance of tile is a wall
+    +/
+    final bool getIsWall() {
+        return isWall;
+    }
+
     @nonPacked
-    Vector2i getWorldPosition() {
+    Vector2i getWorldPositionPixels() {
         return Vector2i(
             (position.X*TILE_SIZE)+(chunk.position.X*CHUNK_SIZE*TILE_SIZE),
             (position.Y*TILE_SIZE)+(chunk.position.Y*CHUNK_SIZE*TILE_SIZE));
     }
 
-    bool canPlace(Vector2i position, bool wall) {
-        return true;
-    }
+    bool canPlace(Vector2i position, bool wall) { return true; }
 
-    final Tile opCall(Vector2i position, Chunk chunk = null) {
-        onInit(position, chunk);
+    final Tile opCall(Vector2i position, bool wall, Chunk chunk = null) {
+        onInit(position, wall, chunk);
         return this;
     }
 
-    void onInit(Vector2i position, Chunk chunk = null) {
+    void onInit(Vector2i position, bool wall, Chunk chunk = null) {
+        this.isWall = wall;
         this.chunk = chunk;
         this.position = position;
-        Vector2i wPosition = getWorldPosition();
+        Vector2i wPosition = getWorldPositionPixels();
         this.hitbox = getDefaultHB(wPosition);
         this.renderbox = new Rectangle(wPosition.X, wPosition.Y, TILE_SIZE, TILE_SIZE);
         if (this.getReservation() !is null) {
