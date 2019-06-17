@@ -202,18 +202,34 @@ private:
 
         // Ingame action start here, we have timeouts for those.
         if (!readyForAction) return;
-        if (mouseState.Position.Z == -1 || mouseState.Position.Z == 1) {
-            selectedSlot += cast(uint)mouseState.Position.Z;
-            if (selectedSlot < 0) {
-                selectedSlot = 9;
+
+        // Avoid zoom interfereing with hotbar switching
+        if (!state.IsKeyDown(Keys.LeftShift)) {
+            if (mouseState.Position.Z == -1 || mouseState.Position.Z == 1) {
+                selectedSlot += cast(uint)mouseState.Position.Z;
+                if (selectedSlot < 0) {
+                    selectedSlot = 9;
+                }
+                selectedSlot %= 10;
+                Item item = inventory[selectedSlot, 0] !is null ? inventory[selectedSlot, 0].getItem() : null;
+                string name = item !is null ? item.getName() : "Bare Hands";
+                string description = item !is null ? item.getDescription() : "You can barely dig with these...";
+                Logger.Info("Changed to hotbar slot {0} ({1}: {2})...", selectedSlot, name, description);
+                actionTimer = 5;
             }
-            selectedSlot %= 10;
-            Item item = inventory[selectedSlot, 0] !is null ? inventory[selectedSlot, 0].getItem() : null;
-            string name = item !is null ? item.getName() : "Bare Hands";
-            string description = item !is null ? item.getDescription() : "You can barely dig with these...";
-            Logger.Info("Changed to hotbar slot {0} ({1}: {2})...", selectedSlot, name, description);
-            actionTimer = 5;
         }
+
+        // Number keys for switching hotbar slot.
+        if (state.IsKeyDown(Keys.Zero))  selectedSlot = 0;
+        if (state.IsKeyDown(Keys.One))   selectedSlot = 1;
+        if (state.IsKeyDown(Keys.Two))   selectedSlot = 2;
+        if (state.IsKeyDown(Keys.Three)) selectedSlot = 3;
+        if (state.IsKeyDown(Keys.Four))  selectedSlot = 4;
+        if (state.IsKeyDown(Keys.Five))  selectedSlot = 5;
+        if (state.IsKeyDown(Keys.Six))   selectedSlot = 6;
+        if (state.IsKeyDown(Keys.Seven)) selectedSlot = 7;
+        if (state.IsKeyDown(Keys.Eight)) selectedSlot = 8;
+        if (state.IsKeyDown(Keys.Nine))  selectedSlot = 9;
 
         // Using items requires them to be in your arm's reach.
         if (!withinReach(tileAtScreen)) return;
