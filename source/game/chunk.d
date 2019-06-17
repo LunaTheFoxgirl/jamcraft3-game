@@ -20,6 +20,7 @@ private:
 
     @nonPacked
     World world;
+
 public:
     ~this() {
     }
@@ -106,33 +107,63 @@ public:
     }
 
     bool placeTile(T)(T tile, Vector2i at, int healAmount = 10) {
-        if (!at.withinChunkBounds) return false;
-        if (this is null) return false;
-        if (this.tiles[at.X][at.Y] !is null) {
-            this.tiles[at.X][at.Y].healDamage(healAmount);
-            return false;
-        }
-        this.tiles[at.X][at.Y] = tile;
-        this.tiles[at.X][at.Y].onInit(at, this);
-        this.tiles[at.X][at.Y].playInitAnimation();
-        this.modified = true;
-        updateLighting();
-        return true;
+        return place(tile, at, false, healAmount);
     }
 
     bool placeWall(T)(T tile, Vector2i at, int healAmount = 10) {
+        return place(tile, at, true, healAmount);
+    }
+
+    bool place(T)(T tile, Vector2i at, bool wall, int healAmount = 10) {
+
+        // Make sure we don't try to access a tile outside the chunk.
         if (!at.withinChunkBounds) return false;
+        
+        // Make sure this chunk isn't null, can happen in rare cases.
         if (this is null) return false;
-        if (this.walls[at.X][at.Y] !is null) {
-            this.walls[at.X][at.Y].healDamage(healAmount);
-            return false;
+        
+        if (!wall) {
+            Vector2i worldPosition = position.chunkPosToTilePos+at;
+            
+            // Check is the slot is reserved, if so heal it.
+            Tile reservedOwner = WORLD.getProvider().inReservedArea(worldPosition);
+            if (reservedOwner !is null) {
+                reservedOwner.healDamage(healAmount);
+                return false;
+            }
+
+            // Check if there's a tile on that spot, if so heal it.
+            if (this.tiles[at.X][at.Y] !is null) {
+                this.tiles[at.X][at.Y].healDamage(healAmount);
+                return false;
+            }
+
+            // Check if the tile is allowed to be placed there.
+            if (!tile.canPlace(worldPosition, false)) return false;
+        } else {
+
+            // Walls don't have reservations (at the moment)
+            if (this.walls[at.X][at.Y] !is null) {
+                this.walls[at.X][at.Y].healDamage(healAmount);
+                return false;
+            }
         }
-        this.walls[at.X][at.Y] = tile;
-        this.walls[at.X][at.Y].onInit(at, this);
-        this.walls[at.X][at.Y].playInitAnimation();
-        this.modified = true;
-        updateLighting();
+
+        setTile(tile, at, wall);
         return true;
+    }
+
+    void setTile(T)(T tile, Vector2i at, bool wall) {
+        if (wall) {
+            this.walls[at.X][at.Y] = tile;
+            this.walls[at.X][at.Y](at, this);
+            this.walls[at.X][at.Y].playInitAnimation();
+        } else {
+            this.tiles[at.X][at.Y] = tile;
+            this.tiles[at.X][at.Y](at, this);
+            this.tiles[at.X][at.Y].playInitAnimation();
+        }
+        this.modified = true;
     }
 
     void update() {
@@ -161,8 +192,8 @@ Chunk load(Vector2i position, World world) {
     ch.world = world;
     foreach(x; 0..CHUNK_SIZE) {
         foreach(y; 0..CHUNK_SIZE) {
-            if (ch.tiles[x][y] !is null) ch.tiles[x][y].onInit(Vector2i(x, y), ch);
-            if (ch.walls[x][y] !is null) ch.walls[x][y].onInit(Vector2i(x, y), ch);
+            if (ch.tiles[x][y] !is null) ch.tiles[x][y](Vector2i(x, y), ch);
+            if (ch.walls[x][y] !is null) ch.walls[x][y](Vector2i(x, y), ch);
         }
     }
     return ch;

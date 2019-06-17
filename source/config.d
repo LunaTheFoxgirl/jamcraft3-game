@@ -4,8 +4,8 @@ module config;
         WORLD CONFIG
 +/
 
-enum CHUNK_EXTENT_X = 7;
-enum CHUNK_EXTENT_Y = 5;
+enum CHUNK_EXTENT_X = 10;
+enum CHUNK_EXTENT_Y = 10;
 
 /++
         CHUNK CONFIG
@@ -31,3 +31,22 @@ enum TILE_SIZE = 16;
 enum TILE_HB_SHRINK = 4;
 enum HIT_SCALE_EFF_MAX = 2f;
 enum HIT_SCALE_FALLOFF = 1f;
+
+/++
+        WORLDGEN CONFIG
++/
+enum H_HEIGHT_FACTOR = 6;
+enum H_HEIGHT_LIMIT = (CHUNK_SIZE*H_HEIGHT_FACTOR);
+enum H_SMOOTH_FACTOR = 256;
+enum HARDSAND_START = 64;
+
+/++
+        PLAYER CONFIG
++/
+
+enum PLAYER_SPEED = 1.8f;
+enum PLAYER_JUMP_SPEED = .8f;
+enum GRAVITY_CONST = 1.5f;
+enum MAX_SPEED = 14f;
+enum DRAG_CONST = 0.7f;
+enum JUMP_TIMER_START = 14;

@@ -19,6 +19,8 @@ recipe name="Tiles" {
     texture "tiles/tile_sand.png" type="png" 
     texture "tiles/tile_sandstone.png" type="png" 
     texture "tiles/tile_coal.png" type="png" 
+    texture "tiles/tile_cactusbase.png" type="png" 
+    texture "tiles/tile_cactus.png" type="png" 
 }
 
 recipe name="FX" {
@@ -27,4 +29,10 @@ recipe name="FX" {
 
 recipe name="Entities" {
     texture "entities/entity_player.png" type="png" 
+}
+
+recipe name="Music" {
+    audio "music/mus_day.ogg" type="ogg"
+    audio "music/mus_night.ogg" type="ogg"
+    audio "music/mus_underground.ogg" type="ogg"
 }

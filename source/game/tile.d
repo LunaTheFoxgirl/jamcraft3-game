@@ -17,8 +17,19 @@ static this() {
     BGColor = new Color(169, 169, 169);
 }
 
+class Reservation {
+    Vector2i origin;
+    Vector2i size;
+}
+
 class Tile {
 private:
+    @nonPacked
+    World world;
+    
+    @nonPacked
+    bool collidable = true;
+
     @nonPacked
     int maxHealth;
 
@@ -73,6 +84,9 @@ protected:
     @nonPacked
     string texture;
 
+    @nonPacked
+    string wallTexture;
+
     /// The id of a tile
     @nonPacked
     string tileId;
@@ -85,9 +99,9 @@ protected:
     }
 
     /++
-        Set how much light this blocks
+        Set how much light this absorbs
     +/
-    final void setLightBlock(float amount) {
+    final void setAbsorbtion(float amount) {
         this.lightBlocking = amount;
     }
 
@@ -106,12 +120,33 @@ protected:
         this.health = maxHealth;
     }
 
+    final string getTextureName() {
+        return this.texture;
+    }
+
+    final string getWallTextureName() {
+        return this.wallTexture;
+    }
+
     final void setTexture(string name) {
         this.texture = name;
     }
 
+    final void setWallTexture(string name) {
+        this.wallTexture = name;
+    }
+
     final Texture2D getTexture() {
         return TEXTURES["tiles/tile_%s".format(this.texture)];
+    }
+
+    final Texture2D getWallTexture() {
+        if (wallTexture is null) return getTexture();
+        return TEXTURES["tiles/tile_%s".format(this.texture)];
+    }
+
+    final void setCollidable(bool isCollidable) {
+        this.collidable = isCollidable;
     }
 
     /++
@@ -136,11 +171,19 @@ protected:
         return false;
     }
 
+    Reservation getReservation() {
+        return null;
+    }
+
     void onSaving(ref Packer packer) { }
     void onLoading(ref Unpacker unpacker) { }
 
 public:
-    string getId() {
+    final bool isCollidable() {
+        return collidable;
+    }
+
+    final string getId() {
         return tileId;
     }
 
@@ -164,15 +207,55 @@ public:
         this.tileId = tileId;
     }
 
-    this(string tileId, Vector2i position, Chunk chunk = null) {
-        this(tileId);
-        onInit(position, chunk);
+    final void draw(SpriteBatch spriteBatch) {
+        if (breakAnim is null) {
+            breakAnim = TEXTURES["fx/fx_break"];
+        }
+
+        // Handle the cute animation
+        if (hitScaleEff > 0) {
+            hitScaleEff -= HIT_SCALE_FALLOFF;
+        }
+        if (hitScaleEff < 0) {
+            hitScaleEff += HIT_SCALE_FALLOFF;
+        }
+
+        // Draw
+        spriteBatch.Draw(getTexture(), getRenderBox, getTexture().Size, FGColor);
+        drawBreakAnim(spriteBatch);
+    }
+
+    final void drawWall(SpriteBatch spriteBatch) {
+
+        // Handle the cute animation
+        if (hitScaleEff > 0) {
+            hitScaleEff--;
+        }
+        if (hitScaleEff < 0) {
+            hitScaleEff++;
+        }
+
+        spriteBatch.Draw(getWallTexture(), getRenderBox, getWallTexture().Size, BGColor);
+        drawBreakAnim(spriteBatch);
+    }
+
+    final void playInitAnimation() {
+        // Apply the lil' cute effect.
+        hitScaleEff = -(HIT_SCALE_EFF_MAX*2);
+    }
+
+    final float getLightBlock() {
+        return lightBlocking;
+    }
+
+    final float getEmission() {
+        return lightEmission;
     }
 
     /++
         Heals any damage done to the block.
     +/
-    void healDamage(int amount) {
+    final void healDamage(int amount) {
         // If health is already full, escape early.
         if (this.health == maxHealth) return;
 
@@ -193,7 +276,7 @@ public:
     /++
         Attacks the tile, dealing damage to it if you have enough dig power.
     +/
-    void attackTile(int digPower, bool wall = false) {
+    final void attackTile(int digPower, bool wall = false) {
         // If the strength is less than 0, it's indestructible.
         if (strength < 0) return;
 
@@ -211,7 +294,7 @@ public:
     /++
         Instantly breaks the tile
     +/
-    void breakTile(bool wall = false) {
+    final void breakTile(bool wall = false) {
         this.onDestroy();
         chunk.modified = true;
         // TODO: update shadow mapping.
@@ -221,9 +304,13 @@ public:
             return;
         } 
         chunk.walls[position.X][position.Y] = null;
+
+        if (this.getReservation() !is null) {
+            WORLD.getProvider().removeReservation(this);
+        }
     }
 
-    bool use() {
+    final bool use() {
         return onUse();
     }
 
@@ -234,58 +321,24 @@ public:
             (position.Y*TILE_SIZE)+(chunk.position.Y*CHUNK_SIZE*TILE_SIZE));
     }
 
-    void draw(SpriteBatch spriteBatch) {
-        if (breakAnim is null) {
-            breakAnim = TEXTURES["fx/fx_break"];
-        }
-
-        // Handle the cute animation
-        if (hitScaleEff > 0) {
-            hitScaleEff -= HIT_SCALE_FALLOFF;
-        }
-        if (hitScaleEff < 0) {
-            hitScaleEff += HIT_SCALE_FALLOFF;
-        }
-
-        // Draw
-        spriteBatch.Draw(getTexture(), getRenderBox, getTexture().Size, FGColor);
-        drawBreakAnim(spriteBatch);
+    bool canPlace(Vector2i position, bool wall) {
+        return true;
     }
 
-    void drawWall(SpriteBatch spriteBatch) {
-
-        // Handle the cute animation
-        if (hitScaleEff > 0) {
-            hitScaleEff--;
-        }
-        if (hitScaleEff < 0) {
-            hitScaleEff++;
-        }
-
-        spriteBatch.Draw(getTexture(), getRenderBox, getTexture().Size, BGColor);
-        drawBreakAnim(spriteBatch);
+    final Tile opCall(Vector2i position, Chunk chunk = null) {
+        onInit(position, chunk);
+        return this;
     }
 
     void onInit(Vector2i position, Chunk chunk = null) {
         this.chunk = chunk;
-
         this.position = position;
         Vector2i wPosition = getWorldPosition();
         this.hitbox = getDefaultHB(wPosition);
         this.renderbox = new Rectangle(wPosition.X, wPosition.Y, TILE_SIZE, TILE_SIZE);
-    }
-
-    final void playInitAnimation() {
-        // Apply the lil' cute effect.
-        hitScaleEff = -HIT_SCALE_EFF_MAX;
-    }
-
-    final float getLightBlock() {
-        return lightBlocking;
-    }
-
-    final float getEmission() {
-        return lightEmission;
+        if (this.getReservation() !is null) {
+            WORLD.getProvider().setReservation(this, this.getReservation());
+        }
     }
 }
 

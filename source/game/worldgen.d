@@ -23,10 +23,6 @@ public:
         //     return GenerateFilled(position);
         // }
 
-        enum H_HEIGHT_FACTOR = 6;
-        enum H_HEIGHT_LIMIT = (CHUNK_SIZE*H_HEIGHT_FACTOR);
-        enum H_SMOOTH_FACTOR = 256;
-        enum HARDSAND_START = 64;
 
         Chunk chunk = new Chunk(world);
         chunk.position = position;
@@ -57,17 +53,17 @@ public:
 
                         if (ngen.noise2D(px, py) > 0.5) {
                             if ((position.Y*CHUNK_SIZE)+y >= height+HARDSAND_START) {
-                                chunk.walls[i][y] = new SandstoneTile(Vector2i(i, y), chunk);
+                                chunk.walls[i][y] = new SandstoneTile()(Vector2i(i, y), chunk);
                             } else {
-                                chunk.walls[i][y] = new SandTile(Vector2i(i, y), chunk);
+                                chunk.walls[i][y] = new SandTile()(Vector2i(i, y), chunk);
                             }
                         } else {
                             if ((position.Y*CHUNK_SIZE)+y >= height+HARDSAND_START) {
-                                chunk.tiles[i][y] = new SandstoneTile(Vector2i(i, y), chunk);
-                                chunk.walls[i][y] = new SandstoneTile(Vector2i(i, y), chunk);
+                                chunk.tiles[i][y] = new SandstoneTile()(Vector2i(i, y), chunk);
+                                chunk.walls[i][y] = new SandstoneTile()(Vector2i(i, y), chunk);
                             } else {
-                                chunk.tiles[i][y] = new SandTile(Vector2i(i, y), chunk);
-                                chunk.walls[i][y] = new SandTile(Vector2i(i, y), chunk);
+                                chunk.tiles[i][y] = new SandTile()(Vector2i(i, y), chunk);
+                                chunk.walls[i][y] = new SandTile()(Vector2i(i, y), chunk);
                             }
                         }
                     }
@@ -109,18 +105,18 @@ public:
                         if ((position.Y*CHUNK_SIZE)+y >= height+HARDSAND_START) {
                             Tile overlay = null;
                             if (ngen.noise2D(pxCoal, pyCoal)*ngen.noise2D(px, py) > 0.1) {
-                                chunk.tiles[x][y] = new CoalTile(Vector2i(x, y), chunk); //overlay = new CoalTile();
+                                chunk.tiles[x][y] = new CoalTile()(Vector2i(x, y), chunk); //overlay = new CoalTile();
                             } else {
-                                chunk.tiles[x][y] = new SandstoneTile(Vector2i(x, y), chunk);
+                                chunk.tiles[x][y] = new SandstoneTile()(Vector2i(x, y), chunk);
                             }
                         } else {
-                            chunk.tiles[x][y] = new SandTile(Vector2i(x, y), chunk);
+                            chunk.tiles[x][y] = new SandTile()(Vector2i(x, y), chunk);
                         }
                     }
                     if ((position.Y*CHUNK_SIZE)+y >= height+HARDSAND_START) {
-                        chunk.walls[x][y] = new SandstoneTile(Vector2i(x, y), chunk);
+                        chunk.walls[x][y] = new SandstoneTile()(Vector2i(x, y), chunk);
                     } else {
-                        chunk.walls[x][y] = new SandTile(Vector2i(x, y), chunk);
+                        chunk.walls[x][y] = new SandTile()(Vector2i(x, y), chunk);
                     }
                 }
             }

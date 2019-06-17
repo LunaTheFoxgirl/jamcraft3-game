@@ -12,6 +12,8 @@ import msgpack;
 import config;
 import game.chunkprov;
 
+__gshared World WORLD;
+
 class World {
 private:
     Entity player;
@@ -69,6 +71,10 @@ private:
 public:
     Camera2D camera;
 
+    ref ChunkProvider getProvider() {
+        return provider;
+    }
+
     ref Chunk[Vector2i] getChunks() {
         return provider.getChunks;
     }
@@ -88,7 +94,6 @@ public:
     Tile wallAt(Vector2i position) {
         return provider.wallAt(position);
     }
-
 
     Player getPlayer() {
         return cast(Player)player;

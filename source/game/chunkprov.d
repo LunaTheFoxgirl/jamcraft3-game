@@ -43,10 +43,11 @@ private:
                     // TODO: Save chunk if changed
                     chunk.save();
                 }
-                Logger.Info("Removing chunk @ {0}", k);
                 getChunks.remove(k);
             }
         }
+
+        Fiber.yield();
 
         foreach(y; 0..CHUNK_EXTENT_Y*2) {
             foreach(x; 0..CHUNK_EXTENT_X*2) {
@@ -61,7 +62,6 @@ private:
                     
                 if (this.hasChunkAt(actualPosition)) continue;
                 getChunks[actualPosition] = loadChunk(actualPosition);
-                Logger.Info("Adding chunk @ {0}", actualPosition);
                 //lighting.notifyUpdate(actualPosition);
             }
         }
@@ -70,6 +70,7 @@ private:
     Fiber chunkProviderFiber;
     bool shouldStop;
 
+    Reservation[Tile] reservations;
 
 public:
     this(World world) {
@@ -81,28 +82,49 @@ public:
         chunkProviderFiber = new Fiber(() {
             import core.thread : Thread;
             import std.datetime : Duration, msecs;
-            initRegistry(false);
             while(!shouldStop) {
                 try {
                     updateChunks();
                 } catch(Exception ex) {
                     Logger.Warn(ex.msg);
                 }
-                Fiber.yield();
             }
         });
+    }
+
+    void setReservation(Tile t, Reservation rev) {
+        reservations[t] = rev;
+    }
+
+    void removeReservation(Tile t) {
+        reservations.remove(t);
+    }
+
+    Tile inReservedArea(Vector2i position) {
+        Rectangle test = new Rectangle();
+        Vector2 fPosition = position.vec2f;
+        foreach(tile, rev; reservations) {
+            test.X = rev.origin.X;
+            test.Y = rev.origin.Y;
+            test.Width = rev.size.X;
+            test.Height = rev.size.Y;
+            if (test.Intersects(fPosition)) return tile;
+        }
+        return null;
+    }
+
+    void lockWorld() {
+        chunkMutex.lock();
+    }
+
+    void unlockWorld() {
+        chunkMutex.unlock();
     }
 
     Chunk loadChunk(Vector2i position) {
         Chunk chnk = load(position, world);
         if (chnk !is null) return chnk;
         else return generator.generateChunk(position);
-    }
-
-    ref Chunk[Vector2i] getChunksSafe() {
-        scope(exit) chunkMutex.unlock();
-        chunkMutex.lock();
-        return chunks;
     }
 
     ref Chunk[Vector2i] getChunks() {

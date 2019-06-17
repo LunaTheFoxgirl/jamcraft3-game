@@ -5,6 +5,7 @@ import game.tiles;
 import game.tile;
 import game.chunk;
 import game.world;
+import engine.music;
 
 private __gshared static DunesGame gameImpl;
 
@@ -13,13 +14,10 @@ ref WindowBounds WINDOW_BOUNDS() {
 }
 
 public class DunesGame : Game {
-private:
-    World world;
-
 public:
     override void Init() {
         // Enable VSync
-        Window.VSync = VSyncState.VSync;
+        Window.VSync = VSyncState.LateTearing;
         Window.AllowResizing = true;
         Window.Title = "Dunes";
         gameImpl = this;
@@ -30,12 +28,14 @@ public:
         // You can prefix the path in the Load function to load a raw file.
         setupManagers(Content);
 
+        initMusicMgr();
+
         registerTileIOFor!Tile();
         registerChunkIO();
-        initRegistry();
+        initTileRegistry();
 
-        world = new World();
-        world.init();
+        WORLD = new World();
+        WORLD.init();
     }
 
     override void UnloadContent() {
@@ -43,16 +43,17 @@ public:
     }
 
     override void Update(GameTimes gameTime) {
-        world.update(gameTime);
+        MusicManager.update();
+        WORLD.update(gameTime);
     }
 
     override void Draw(GameTimes gameTime) {
         Renderer.ClearColor(Color.CornflowerBlue);
-        world.draw(sprite_batch);
+        WORLD.draw(sprite_batch);
     }
 
     void save() {
-        world.save();
+        WORLD.save();
         //world.getLighting.stop();
     }
 }

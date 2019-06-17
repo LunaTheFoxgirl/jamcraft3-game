@@ -9,11 +9,4 @@ public:
         setStrength(10);
         setHealth(20);
     }
-
-    this(Vector2i position, Chunk chunk = null) {
-        super("coal", position, chunk);
-        setTexture("coal");
-        setStrength(10);
-        setHealth(20);
-    }
 }

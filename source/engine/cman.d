@@ -19,7 +19,11 @@ public:
     }
 
     void add(string tex) {
-        cachedItems[tex] = content.Load!T(tex);
+        debug {
+            cachedItems[tex] = content.Load!T("!raw/"~tex~".png");
+        } else {
+            cachedItems[tex] = content.Load!T(tex);
+        }
     }
 
     void uncache(string tex) {
@@ -28,7 +32,9 @@ public:
 }
 
 __gshared static ContentCache!Texture2D TEXTURES;
+__gshared static ContentCache!Music MUSIC;
 
 void setupManagers(ContentManager mgr) {
     TEXTURES = ContentCache!Texture2D(mgr);
+    MUSIC = ContentCache!Music(mgr);
 }
