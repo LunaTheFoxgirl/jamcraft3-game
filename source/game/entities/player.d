@@ -27,7 +27,7 @@ private:
         INVENTORY
     +/
     Container!(10, 6) inventory;
-    int selectedSlot = 0;
+    int selectedSlot = 1;
 
 
     /++
@@ -290,7 +290,9 @@ public:
 
     override void drawAfter(SpriteBatch spriteBatch) {
         int offset = 16;
-        foreach(i; 0..10) {
+        foreach(ix; 1..11) {
+            // Little sneaky trick to render slot 0 last.
+            int i = ix%10;
             if (i == selectedSlot) {
                 renderInvCircle(spriteBatch, new Rectangle(offset-2, 16-2, 32+4, 32+4), i);
             } else {
