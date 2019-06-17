@@ -23,6 +23,10 @@ recipe name="Tiles" {
     texture "tiles/tile_cactus.png" type="png" 
 }
 
+recipe name="UI" {
+    texture "ui/ui_selectitem.png" type="png"
+}
+
 recipe name="FX" {
     texture "fx/fx_break.png" type="png"
 }
