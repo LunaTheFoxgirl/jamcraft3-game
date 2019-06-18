@@ -14,7 +14,11 @@ public:
         setLightEmission(2f);
     }
 
+    override bool canPlace(Vector2i position, bool wall) {
+        return !wall;
+    }
+
     override bool isCollidableWith(Entity e) {
-        return (e.motion.Y > 0 && Keyboard.GetState().IsKeyUp(Keys.S));
+        return (e.motion.Y > 0 && e.feet.Y < hitbox.Center.Y && Keyboard.GetState().IsKeyUp(Keys.S));
     }
 }

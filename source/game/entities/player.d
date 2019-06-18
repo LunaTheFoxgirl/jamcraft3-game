@@ -310,18 +310,18 @@ public:
             string countStr = "%d".format(items.getCount());
             measure = FONTS["fonts/UIFont"].MeasureString(countStr);
             spriteBatch.DrawString(FONTS["fonts/UIFont"], countStr, Vector2(rect.Right-measure.X, rect.Bottom-measure.Y), Color.White, 1f);
-        }
 
-        if (xRect.Intersects(Mouse.Position)) {
-            string name = inventory[i, 0] !is null ? inventory[i, 0].getItem().getName() : "Bare Handed";
-            string desc = inventory[i, 0] !is null ? inventory[i, 0].getItem().getDescription() : "You can barely dig with these...";
+            if (xRect.Intersects(Mouse.Position)) {
+                string name = inventory[i, 0].getItem().getName() ;
+                string desc = inventory[i, 0].getItem().getDescription();
 
-            Vector2 basePos = Vector2(mouseState.Position.X+16, mouseState.Position.Y+16);
-            measure = FONTS["fonts/UIFontB"].MeasureString("A");
+                Vector2 basePos = Vector2(mouseState.Position.X+16, mouseState.Position.Y+16);
+                measure = FONTS["fonts/UIFontB"].MeasureString("A");
 
-            spriteBatch.DrawString(FONTS["fonts/UIFontB"], name, basePos, Color.White, 1f);
-            foreach(offset, line; desc.split('\n')) {
-                spriteBatch.DrawString(FONTS["fonts/UIFont"], line, Vector2(basePos.X, basePos.Y+(measure.Y*(offset+2))), Color.White, 1f);
+                spriteBatch.DrawString(FONTS["fonts/UIFontB"], name, basePos, Color.White, 1f);
+                foreach(offset, line; desc.split('\n')) {
+                    spriteBatch.DrawString(FONTS["fonts/UIFont"], line, Vector2(basePos.X, basePos.Y+(measure.Y*(offset+2))), Color.White, 1f);
+                }
             }
         }
     }

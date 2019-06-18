@@ -122,8 +122,12 @@ public:
         // Make sure this chunk isn't null, can happen in rare cases.
         if (this is null) return false;
         
+
+        // Check if the tile is allowed to be placed there.
+        Vector2i worldPosition = position.chunkPosToTilePos+at;
+        if (!tile.canPlace(worldPosition, wall)) return false;
+
         if (!wall) {
-            Vector2i worldPosition = position.chunkPosToTilePos+at;
             
             // Check is the slot is reserved, if so heal it.
             Tile reservedOwner = WORLD.getProvider().inReservedArea(worldPosition);
@@ -137,9 +141,6 @@ public:
                 this.tiles[at.X][at.Y].healDamage(healAmount);
                 return false;
             }
-
-            // Check if the tile is allowed to be placed there.
-            if (!tile.canPlace(worldPosition, false)) return false;
         } else {
 
             // Walls don't have reservations (at the moment)

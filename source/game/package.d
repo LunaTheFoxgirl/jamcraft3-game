@@ -28,6 +28,7 @@ public:
         Window.Title = "Dunes";
         gameImpl = this;
         this.CountFPS = true;
+        this.ShowCursor = false;
     }
 
     override void LoadContent() {
@@ -65,6 +66,13 @@ public:
         WORLD.draw(sprite_batch);
 
         sprite_batch.Begin();
+
+        Vector2 mpos = Mouse.Position();
+        sprite_batch.Draw(
+            TEXTURES["ui/ui_cursor"], 
+            new Rectangle(cast(int)mpos.X, cast(int)mpos.Y, 24, 24), 
+            TEXTURES["ui/ui_cursor"].Size, 
+            Color.White);
 
         sprite_batch.DrawString(
             font, 
