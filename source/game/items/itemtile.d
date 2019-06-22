@@ -56,7 +56,6 @@ public:
     }
 
     override bool onUse(Entity user, Vector2i at, bool alt) {
-        Logger.Info("Trying to place {1} at {0}", at, getSubId());
         return placeTile(user, TileRegistry.createNew(getSubId()), at, alt);
     }
 

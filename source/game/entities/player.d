@@ -101,20 +101,14 @@ private:
             spriteFlip = SpriteFlip.None;
         }
 
-        if (state.IsKeyDown(Keys.W)) {
-            this.momentum.Y -= PLAYER_SPEED;
-        }
-
         if (state.IsKeyDown(Keys.S)) {
             this.momentum.Y += PLAYER_SPEED;
         }
 
         this.momentum.X *= DRAG_CONST;
-        this.momentum.Y *= DRAG_CONST;
 
         if (state.IsKeyDown(Keys.Space) && grounded) {
             if (jumpTimer <= 0) {
-                Logger.Info("JUMP!");
                 jumpTimer = JUMP_TIMER_START;
             }
         }
@@ -124,9 +118,9 @@ private:
 
 
     void handlePhysics() {
-        if (jumpTimer <= 0) {
-            this.momentum.Y += GRAVITY_CONST;
-        } else {
+        if (jumpTimer <= 0) this.momentum.Y += GRAVITY_CONST;
+        else {
+            this.momentum.Y *= DRAG_CONST;
             this.momentum.Y -= Mathf.Lerp(0, PLAYER_JUMP_SPEED, (1f-(jumpTimer/JUMP_TIMER_START)));
             if (!state.IsKeyDown(Keys.Space) && jumpTimer <= JUMP_TIMER_START/2) jumpTimer = 0;
             jumpTimer--;
@@ -304,11 +298,7 @@ public:
     }
 
     override void onDraw(SpriteBatch spriteBatch) {
-        spriteBatch.Draw(TEXTURES["tiles/tile_sand"], this.renderbox, TEXTURES["tiles/tile_sand"].Size, Color.Yellow);
-        spriteBatch.Draw(TEXTURES["tiles/tile_sand"], this.hitbox.Displace(cast(int)momentum.X, cast(int)momentum.Y), TEXTURES["tiles/tile_sand"].Size, Color.Red);
-        spriteBatch.Draw(TEXTURES["tiles/tile_sand"], this.hitbox, TEXTURES["tiles/tile_sand"].Size, Color.Blue);
         spriteBatch.Draw(TEXTURES["entities/entity_player"], this.renderbox, TEXTURES["entities/entity_player"].Size, Color.White, spriteFlip);
-        spriteBatch.Draw(TEXTURES["tiles/tile_coal"], new Rectangle(cast(int)this.feet.X-4, cast(int)this.feet.Y-4, 8, 8), TEXTURES["tiles/tile_coal"].Size, Color.Red);
     }
 
     void renderInvCircle(SpriteBatch spriteBatch, Rectangle rect, int i) {
