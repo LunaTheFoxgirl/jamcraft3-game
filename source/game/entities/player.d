@@ -277,12 +277,12 @@ public:
         //     });
         // }
 
-        // inventory[0, 0] = new ItemStack(new ItemTile()("sandstone"), 999);
-        // inventory[1, 0] = new ItemStack(new ItemTile()("sand"), 999);
-        // inventory[2, 0] = new ItemStack(new ItemTile()("cactus"), 999);
-        // inventory[3, 0] = new ItemStack(new ItemTile()("cactusbase"), 8);
-        // inventory[4, 0] = new ItemStack(new ItemTile()("cactusplatform"), 999);
-        // inventory[5, 0] = new ItemStack(new ItemTile()("glass"), 999);
+        inventory[0, 0] = new ItemStack(new ItemTile()("sandstone"), 999);
+        inventory[1, 0] = new ItemStack(new ItemTile()("sand"), 999);
+        inventory[2, 0] = new ItemStack(new ItemCactus(), 999);
+        inventory[3, 0] = new ItemStack(new ItemTile()("cactusbase"), 8);
+        inventory[4, 0] = new ItemStack(new ItemTile()("cactusplatform"), 999);
+        inventory[5, 0] = new ItemStack(new ItemTile()("glass"), 999);
     }
 
     Rectangle renderbox() {
