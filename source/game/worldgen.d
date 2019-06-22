@@ -17,6 +17,25 @@ public:
         this.world = world;
     }
 
+    double fractalBrownian(int octaves, double px, double py) {
+        const double lacunarity = 1.9;
+        const double gain = 0.65;
+
+        double sum = 0.0;
+        double amplitude = 1.0;
+
+        foreach(i; 0..octaves) {
+            sum += amplitude * ngen.noise2D(px, py);
+
+            amplitude *= gain;
+
+            px *= lacunarity;
+            py  *= lacunarity;
+        }
+
+        return sum;
+    }
+
     Chunk generateChunk(Vector2i position) {
         // if (position.Y == 1) {
         //     // TODO: Generate cave
@@ -51,7 +70,9 @@ public:
                         double px = (cast(double)(position.X*CHUNK_SIZE)/10)+(cast(double)i/10);
                         double py = (cast(double)(position.Y*CHUNK_SIZE)/10)+(cast(double)y/10);
 
-                        if (ngen.noise2D(px, py) > 0.5) {
+                        double noise = ngen.noise2D(px, py)*(fractalBrownian(5, px, py)/2);
+
+                        if (noise > 0.5) {
                             if ((position.Y*CHUNK_SIZE)+y >= height+HARDSAND_START) {
                                 chunk.walls[i][y] = new SandstoneTile()(Vector2i(i, y), true, chunk);
                             } else {
@@ -101,7 +122,7 @@ public:
                     double pxCoal = (cast(double)(position.X*CHUNK_SIZE)/5)+(cast(double)x/5);
                     double pyCoal = (cast(double)(position.Y*CHUNK_SIZE)/5)+(cast(double)y/5);
 
-                    if ((ngen.noise2D(px2, py2)*ngen.noise2D(px, py)) < 0.1 || ngen.noise2D(px2, py2) < 0.1) {
+                    if (fractalBrownian(5, px2, py2) < 0.1) {
                         if ((position.Y*CHUNK_SIZE)+y >= height+HARDSAND_START) {
                             Tile overlay = null;
                             if (ngen.noise2D(pxCoal, pyCoal)*ngen.noise2D(px, py) > 0.1) {

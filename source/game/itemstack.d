@@ -31,7 +31,7 @@ public:
     }
 
     bool sharesType(ItemStack otherStack) {
-        return item.getId == otherStack.item.getId();
+        return item.getId == otherStack.item.getId() && item.getSubId() == otherStack.item.getSubId();
     }
 
     ItemStack combineStack(ItemStack otherStack) {

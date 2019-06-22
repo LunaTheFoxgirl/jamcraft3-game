@@ -9,6 +9,7 @@ import game.world;
 import engine.music;
 import std.format;
 import game.container;
+import game.input;
 
 private __gshared static DunesGame gameImpl;
 
@@ -38,6 +39,8 @@ public:
         // You can prefix the path in the Load function to load a raw file.
         setupManagers(Content);
 
+        Input = new InputSystem();
+
         initMusicMgr();
         initTileRegistry();
         initItemRegistry();
@@ -58,8 +61,10 @@ public:
     }
 
     override void Update(GameTimes gameTime) {
+        Input.beginInput();
         MusicManager.update();
         WORLD.update(gameTime);
+        Input.endInput();
     }
 
     override void Draw(GameTimes gameTime) {

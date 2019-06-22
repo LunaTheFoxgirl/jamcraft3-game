@@ -6,8 +6,8 @@ import polyplex;
 
 __gshared static Registry!Item ItemRegistry;
 
-Item createItem(Registry!Item ext, string id, string subId = null) {
-    Item t = ItemRegistry.createNew(id);
+Item createItem(ref Registry!Item ext, string id, string subId = null) {
+    Item t = ext.createNew(id);
     return t(subId);
 }
 
