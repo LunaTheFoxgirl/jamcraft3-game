@@ -8,11 +8,9 @@ import game.itemstack;
 import engine.music;
 import polyplex;
 import config;
-
-struct CollissionData {
-    Rectangle collissionArea;
-    bool didCollide;
-}
+import game.ui.uis.inventory;
+import game.input;
+import game.cursor;
 
 struct PlayerStats {
     int swingSpeedBreak;
@@ -28,6 +26,7 @@ private:
     +/
     Container inventory;
     int selectedSlot = 0;
+    UIHotbar hotbar;
 
 
     /++
@@ -194,7 +193,7 @@ private:
     void handleInteraction() {
         tileAtScreen = world.getTileAtScreen(Mouse.Position);
 
-        if (state.IsKeyDown(Keys.LeftShift)) {
+        if (Input.IsKeyDown(Keys.LeftShift)) {
             float scroll = mouseState.Position.Z/20;
             world.camera.Zoom += scroll;
             if (world.camera.Zoom < 0.9f) {
@@ -209,18 +208,15 @@ private:
         if (!readyForAction) return;
 
         // Avoid zoom interfereing with hotbar switching
-        if (!state.IsKeyDown(Keys.LeftShift)) {
-            if (mouseState.Position.Z == -1 || mouseState.Position.Z == 1) {
+        if (!Input.IsKeyDown(Keys.LeftShift)) {
+            if (Input.GetScroll != 0) {
                 selectedSlot += cast(uint)mouseState.Position.Z;
                 if (selectedSlot < 0) {
                     selectedSlot = 9;
                 }
                 selectedSlot %= 10;
                 Item item = inventory[selectedSlot, 0] !is null ? inventory[selectedSlot, 0].getItem() : null;
-                string name = item !is null ? item.getName() : "Bare Hands";
-                string description = item !is null ? item.getDescription() : "You can barely dig with these...";
-                Logger.Info("Changed to hotbar slot {0} ({1}: {2})...", selectedSlot, name, description);
-                actionTimer = 5;
+                actionTimer = 3;
             }
         }
 
@@ -238,15 +234,21 @@ private:
 
         // Using items requires them to be in your arm's reach.
         if (!withinReach(tileAtScreen)) return;
-        if (mouseState.IsButtonPressed(MouseButton.Right) || mouseState.IsButtonPressed(MouseButton.Left)) {
-            bool alt = mouseState.IsButtonPressed(MouseButton.Right);
-            if (inventory[selectedSlot, 0] !is null) {
-                if (inventory[selectedSlot, 0].use(this, tileAtScreen, alt)) {
-                    actionTimer = inventory[selectedSlot, 0].getItem().getUseTime();
+        if (Input.IsButtonDown(MouseButton.Right) || Input.IsButtonDown(MouseButton.Left)) {
+            bool alt = Input.IsButtonDown(MouseButton.Right);
+            if (Cursor.getHeldItems() !is null) {
+                if (Cursor.getHeldItems().use(this, tileAtScreen, alt)) {
+                    actionTimer = Cursor.getHeldItems().getItem().getUseTime();
                 }
             } else {
-                attackBlock(tileAtScreen, alt);
-                actionTimer = stats.swingSpeedBreak;
+                if (inventory[selectedSlot, 0] !is null) {
+                    if (inventory[selectedSlot, 0].use(this, tileAtScreen, alt)) {
+                        actionTimer = inventory[selectedSlot, 0].getItem().getUseTime();
+                    }
+                } else {
+                    attackBlock(tileAtScreen, alt);
+                    actionTimer = stats.swingSpeedBreak;
+                }
             }
         }
         
@@ -254,17 +256,27 @@ private:
 
     void handleMusic() {
         import config;
-        // if (hitbox.Center.toTilePos.Y > H_HEIGHT_LIMIT) {
-        //     MusicManager.play("underground");
-        // } else {
-        //     MusicManager.play("day");
-        // }
+        if (hitbox.Center.toTilePos.Y > H_HEIGHT_LIMIT) {
+            MusicManager.play("underground");
+        } else {
+            MusicManager.play("day");
+        }
     }
 
 public:
     this(World world) {
         super(world, Vector2(0f, 0f), new Rectangle(8, 8, 16, 64-8));
         inventory = new Container(10, 6);
+
+        hotbar = new UIHotbar(inventory);
+
+        // static foreach(i; 0..10) {
+        //     slots[i].setClickCallback(() {
+        //         selectedSlot = i;
+        //         Input.interruptMouse();
+        //     });
+        // }
+
         // inventory[0, 0] = new ItemStack(new ItemTile()("sandstone"), 999);
         // inventory[1, 0] = new ItemStack(new ItemTile()("sand"), 999);
         // inventory[2, 0] = new ItemStack(new ItemTile()("cactus"), 999);
@@ -284,6 +296,7 @@ public:
             actionTimer--;
         }
 
+        hotbar.update();
 
         handleMovement();
         handleInteraction();
@@ -302,51 +315,9 @@ public:
         spriteBatch.Draw(TEXTURES["entities/entity_player"], this.renderbox, TEXTURES["entities/entity_player"].Size, Color.White, spriteFlip);
     }
 
-    void renderInvCircle(SpriteBatch spriteBatch, Rectangle rect, int i) {
-        import std.array;
-        import std.format;
-        Vector2 measure;
-        int wEx = rect.Width/2;
-        int hEx = rect.Height/2;
-        Rectangle xRect = new Rectangle(rect.X-wEx, rect.Y-hEx, rect.Width*2, rect.Height*2);
-        spriteBatch.Draw(TEXTURES["ui/ui_selectitem"], xRect, TEXTURES["ui/ui_selectitem"].Size, Color.White);
-
-        if (inventory[i, 0] !is null) inventory[i, 0].getItem().render(rect, spriteBatch);
-
-        if (inventory[i, 0] !is null) {
-            ItemStack items = inventory[i, 0];
-            string countStr = "%d".format(items.getCount());
-            measure = FONTS["fonts/UIFont"].MeasureString(countStr);
-            spriteBatch.DrawString(FONTS["fonts/UIFont"], countStr, Vector2(rect.Right-measure.X, rect.Bottom-measure.Y), Color.White, 1f);
-
-            if (xRect.Intersects(Mouse.Position)) {
-                string name = inventory[i, 0].getItem().getName() ;
-                string desc = inventory[i, 0].getItem().getDescription();
-
-                Vector2 basePos = Vector2(mouseState.Position.X+16, mouseState.Position.Y+16);
-                measure = FONTS["fonts/UIFontB"].MeasureString("A");
-
-                spriteBatch.DrawString(FONTS["fonts/UIFontB"], name, basePos, Color.White, 1f);
-                foreach(offset, line; desc.split('\n')) {
-                    spriteBatch.DrawString(FONTS["fonts/UIFont"], line, Vector2(basePos.X, basePos.Y+(measure.Y*((offset*2)+2))), Color.White, 1f);
-                }
-            }
-        }
-    }
-
     override void drawAfter(SpriteBatch spriteBatch) {
-        int offset = 16;
-        foreach(ix; 0..10) {
-            // Little sneaky trick to render slot 0 last.
-            int i = ix%10;
-            if (i == selectedSlot) {
-                renderInvCircle(spriteBatch, new Rectangle(offset-2, 16-2, 32+4, 32+4), i);
-            } else {
-                renderInvCircle(spriteBatch, new Rectangle(offset, 16, 32, 32), i);
-            }
-            offset += 64;
-        }
-        //spriteBatch.Draw(TEXTURES["tiles/tile_sand"], new Rectangle(tileAtScreen.X*BLOCK_SIZE, tileAtScreen.Y*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE), TEXTURES["tiles/tile_sand"].Size, Color.Blue);
+        hotbar.draw(spriteBatch, selectedSlot);
+        hotbar.postDraw(spriteBatch);
     }
 
     /++
@@ -361,5 +332,6 @@ public:
     +/
     final void setInventory(Container container) {
         inventory = container;
+        hotbar.updateRef(container);
     }
 }

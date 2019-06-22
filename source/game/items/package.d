@@ -1,6 +1,7 @@
 module game.items;
 public import game.item;
 public import game.items.itemtile;
+public import game.items.itemcactus;
 import engine.registry;
 import polyplex;
 
@@ -21,4 +22,5 @@ private void registerItem(T)() if (is(T : Item)) {
 void initItemRegistry() {
     ItemRegistry = new Registry!Item();
     registerItem!ItemTile();
+    registerItem!ItemCactus();
 }

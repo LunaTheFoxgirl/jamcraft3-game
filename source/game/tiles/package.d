@@ -13,6 +13,7 @@ public import game.tiles.cactusplatform;
 public import game.tiles.cactusbase;
 public import game.tiles.cactus;
 public import game.tiles.glass;
+public import game.tiles.tallcactus;
 
 __gshared static Registry!Tile TileRegistry;
 

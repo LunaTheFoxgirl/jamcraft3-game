@@ -3,6 +3,7 @@ import polyplex;
 import msgpack;
 import engine.cman;
 import game.entity;
+import game.utils;
 
 class Item {
 private:
@@ -136,5 +137,30 @@ public:
     final Item opCall(string subId) {
         onInit(subId);
         return this;
+    }
+
+    /++
+        Places a tile in the world, utility function
+    +/
+    final bool placeTile(T)(Entity user, T tile, Vector2i at, bool isWall) {
+        // Get the chunk where the tile should be placed
+        Vector2i chunkAtScreen = at.tilePosToChunkPos;
+        Chunk chunk = WORLD[chunkAtScreen.X, chunkAtScreen.Y];
+
+        // Calculate the tilepos within
+        Vector2i tilePos = at.wrapTilePos;
+
+        // Handle wall case
+        if (isWall) return chunk.placeWall(tile, tilePos, 2);
+        
+        // Get tile position in pixels as a rectangle via default collission
+        Vector2i px = at.toPixels;
+        Rectangle tileBounds = getDefaultHB(px);
+
+        // If the tile would be in the way cancel.
+        if (tileBounds.Intersects(user.hitbox)) return false;
+
+        // Try to place tile
+        return chunk.placeTile(tile, tilePos, 2);
     }
 }

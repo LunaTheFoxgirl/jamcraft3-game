@@ -75,4 +75,16 @@ public:
         if (used && item.getConsumable()) count--;
         return used;
     }
+
+    void render(SpriteBatch spriteBatch, Rectangle area) {
+        import std.format : format;
+        item.render(area, spriteBatch);
+
+        Vector2 charSize = FONTS["fonts/UIFontB"].MeasureString("X");
+
+        spriteBatch.DrawString(
+            FONTS["fonts/UIFontB"], 
+            "%d".format(count), 
+                Vector2(area.X-(charSize.X/2), area.Bottom-(charSize.Y/2)), Color.White);
+    }
 }

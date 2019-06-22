@@ -5,14 +5,15 @@ import game.chunk;
 import game.tiles;
 import game.entity;
 import game.utils;
+import game.itemstack;
 import std.format;
 import engine.registry;
 import msgpack;
 import config;
 
 
-private static Color FGColor;
-private static Color BGColor;
+Color FGColor;
+Color BGColor;
 
 static this() {
     FGColor = Color.White;
@@ -62,32 +63,6 @@ private:
     @nonPacked
     string[string] stats;
 
-    Rectangle getBreakAnimStep() {
-        float percentage = 0f;
-        if (maxHealth > 0) {
-            percentage = cast(float)health/cast(float)maxHealth;
-        }
-        int index = 3-cast(int)(percentage*4);
-        int fWidth = breakAnim.Width()/4;
-
-        return new Rectangle(index*fWidth, 0, fWidth, breakAnim.Height);
-    }
-
-    final void drawBreakAnim(SpriteBatch spriteBatch) {
-        if (health != maxHealth) {
-            spriteBatch.Draw(breakAnim, getRenderBox, getBreakAnimStep(), Color.White);
-        }
-    }
-
-    final Rectangle getRenderBox() {
-        float efDouble = hitScaleEff*2;
-        int px = cast(int)(cast(float)renderbox.X-hitScaleEff);
-        int py = cast(int)(cast(float)renderbox.Y-hitScaleEff);
-        int pw = cast(int)(cast(float)renderbox.Width+efDouble);
-        int ph = cast(int)(cast(float)renderbox.Height+efDouble);
-        return new Rectangle(px, py, pw, ph);
-    }
-
 protected:
     @nonPacked
     int health;
@@ -105,6 +80,39 @@ protected:
     @nonPacked
     string tileId;
     
+    final float getHitScaleFX() {
+        return hitScaleEff;
+    }
+
+    final Rectangle getBreakAnimStep() {
+        float percentage = 0f;
+        if (maxHealth > 0) {
+            percentage = cast(float)health/cast(float)maxHealth;
+        }
+        int index = 3-cast(int)(percentage*4);
+        int fWidth = breakAnim.Width()/4;
+
+        return new Rectangle(index*fWidth, 0, fWidth, breakAnim.Height);
+    }
+
+    final void drawBreakAnim(SpriteBatch spriteBatch) {
+        if (health != maxHealth) {
+            spriteBatch.Draw(breakAnim, getRenderBox, getBreakAnimStep(), Color.White);
+        }
+    }
+
+    final Rectangle getRenderBoxNoFX() {
+        return renderbox;
+    }
+
+    final Rectangle getRenderBox() {
+        float efDouble = hitScaleEff*2;
+        int px = cast(int)(cast(float)renderbox.X-hitScaleEff);
+        int py = cast(int)(cast(float)renderbox.Y-hitScaleEff);
+        int pw = cast(int)(cast(float)renderbox.Width+efDouble);
+        int ph = cast(int)(cast(float)renderbox.Height+efDouble);
+        return new Rectangle(px, py, pw, ph);
+    }
 
     /++
         Set name shown as Item
@@ -174,6 +182,14 @@ protected:
         this.collidable = isCollidable;
     }
 
+    final void setHitbox(Rectangle hitbox) {
+        this.hitbox = hitbox;
+    }
+
+    final void setRenderbox(Rectangle renderbox) {
+        this.renderbox = renderbox;
+    }
+
     /++
         onUse is called when the tile is used (clicked on)
 
@@ -199,7 +215,7 @@ protected:
         import game.itemstack;
         if (auto player = cast(Player)from) {
             auto inventory = player.getInventory();
-            inventory.fitIn(new ItemStack(new ItemTile()(this.tileId), 1));
+            inventory.fitIn(getDrops());
         }
         return false;
     }
@@ -208,9 +224,20 @@ protected:
         return null;
     }
 
+    ItemStack getDrops() {
+        import game.items.itemtile : ItemTile;
+        return new ItemStack(new ItemTile()(this.tileId), 1);
+    }
+
     void onSaving(ref Packer packer) { }
     void onLoading(ref Unpacker unpacker) { }
     void onUpdate() { }
+
+    void onDraw(SpriteBatch spriteBatch, bool wall) {
+        // Draw
+        spriteBatch.Draw(getTexture(), getRenderBox, getTexture().Size, wall ? BGColor : FGColor);
+        drawBreakAnim(spriteBatch);
+    }
 
 public:
 
@@ -287,9 +314,7 @@ public:
             hitScaleEff += HIT_SCALE_FALLOFF;
         }
 
-        // Draw
-        spriteBatch.Draw(getTexture(), getRenderBox, getTexture().Size, FGColor);
-        drawBreakAnim(spriteBatch);
+        onDraw(spriteBatch, false);
     }
 
     final void drawWall(SpriteBatch spriteBatch) {
@@ -301,9 +326,7 @@ public:
         if (hitScaleEff < 0) {
             hitScaleEff++;
         }
-
-        spriteBatch.Draw(getWallTexture(), getRenderBox, getWallTexture().Size, BGColor);
-        drawBreakAnim(spriteBatch);
+        onDraw(spriteBatch, true);
     }
 
     final void playInitAnimation() {

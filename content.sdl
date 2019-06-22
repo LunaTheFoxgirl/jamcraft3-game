@@ -10,11 +10,6 @@ path:output "content/"
 // Input folder (where your raw content (.png, .mp3, etc.) should be)
 path:input "raw/"
 
-// Basic recipe
-recipe name="Main" {
-    // Insert recipe items here.    
-}
-
 recipe name="Tiles" {
     texture "tiles/tile_sand.png" type="png" 
     texture "tiles/tile_sandstone.png" type="png" 
@@ -22,10 +17,14 @@ recipe name="Tiles" {
     texture "tiles/tile_cactusbase.png" type="png" 
     texture "tiles/tile_cactus.png" type="png" 
     texture "tiles/tile_cactusplatform.png" type="png" 
+    texture "tiles/tile_cactuscraftingbench.png" type="png" 
+    texture "tiles/tile_glass.png" type="png" 
 }
 
 recipe name="UI" {
     texture "ui/ui_selectitem.png" type="png"
+    texture "ui/ui_slot.png" type="png"
+    texture "ui/ui_cursor.png" type="png"
 }
 
 recipe name="FX" {

@@ -86,13 +86,14 @@ public:
     +/
     bool IsButtonUp(MouseButton button) {
         if (mouseInterrupted) return false;
-        return currentMouse.IsButtonReleased(key);
+        return currentMouse.IsButtonReleased(button);
     }
 
     /++
         Returns the scroll
     +/
     float GetScroll() {
+        if (mouseInterrupted) return 0f;
         return currentMouse.Position.Z;
     }
 

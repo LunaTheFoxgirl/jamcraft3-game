@@ -10,6 +10,7 @@ import engine.music;
 import std.format;
 import game.container;
 import game.input;
+import game.cursor;
 
 private __gshared static DunesGame gameImpl;
 
@@ -49,6 +50,8 @@ public:
         registerContainerIO();
         registerChunkIO();
 
+        Cursor = new GameCursorImpl();
+
         WORLD = new World();
         WORLD.init();
 
@@ -65,6 +68,7 @@ public:
         MusicManager.update();
         WORLD.update(gameTime);
         Input.endInput();
+        Cursor.update();
     }
 
     override void Draw(GameTimes gameTime) {
@@ -73,12 +77,8 @@ public:
 
         sprite_batch.Begin();
 
-        Vector2 mpos = Mouse.Position();
-        sprite_batch.Draw(
-            TEXTURES["ui/ui_cursor"], 
-            new Rectangle(cast(int)mpos.X, cast(int)mpos.Y, 24, 24), 
-            TEXTURES["ui/ui_cursor"].Size, 
-            Color.White);
+        Cursor.render(sprite_batch);
+
 
         // sprite_batch.DrawString(
         //     font, 
