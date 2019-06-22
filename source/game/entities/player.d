@@ -62,75 +62,9 @@ private:
     int actionTimer;
     bool grounded;
 
-    Vector2i feetBlock(Vector2 offset = Vector2(0, 0)) {
-        return Vector2i(cast(int)(feet.X+offset.X), cast(int)(feet.Y+offset.Y)).toTilePos;
-    }
-
-
-
-
     /++
         UTILITY
     +/
-
-    void limitMomentum() {
-
-        if (this.motion.X > MAX_SPEED) this.motion.X = MAX_SPEED;
-        if (this.motion.X < -MAX_SPEED) this.motion.X = -MAX_SPEED;
-
-        if (this.motion.Y > MAX_SPEED) this.motion.Y = MAX_SPEED;
-        if (this.motion.Y < -MAX_SPEED) this.motion.Y = -MAX_SPEED;
-
-    }
-
-    void handlePhysics() {
-        limitMomentum();
-        float v;
-        Vector2i centerTile = Vector2i(cast(int)hitbox.Center.X, cast(int)hitbox.Center.Y).toTilePos;
-
-        position.X += motion.X;
-        position.X = Mathf.Round(position.X);
-        col: foreach(adjacent; centerTile.getAdjacent(12, 12)) {
-            Tile b = world.tileAt(adjacent);
-            if (b !is null && b.isCollidable()) {
-                if (!b.isCollidableWith(this)) continue;
-                Rectangle bAABB = b.hitbox;
-                v = calculateAABBCollissionX(this.hitbox, bAABB);
-                if (v != 0.0f) {
-                    this.motion.X = 0f;
-                    this.position.X += v;
-                }
-            }
-        }
-
-        if (jumpTimer <= 0) {
-            motion.Y += GRAVITY_CONST;
-        } else {
-            this.motion.Y -= Mathf.Lerp(0, PLAYER_JUMP_SPEED, (1f-(jumpTimer/JUMP_TIMER_START)));
-            if (!state.IsKeyDown(Keys.Space) && jumpTimer <= JUMP_TIMER_START/2) jumpTimer = 0;
-            jumpTimer--;
-            
-        }
-        position.Y += motion.Y;
-        grounded = false;
-        foreach(adjacent; centerTile.getAdjacent(12, 12)) {
-            Tile b = world.tileAt(adjacent);
-            if (b !is null && b.isCollidable()) {
-                if (!b.isCollidableWith(this)) continue;
-                Rectangle bAABB = b.hitbox;
-                v = calculateAABBCollissionY(this.hitbox, bAABB);
-                if (v < 0) {
-                    this.position.Y -= motion.Y;
-                    this.motion.Y = 0f;
-                    grounded = true;
-                }
-                if (v > 0) {
-                    this.motion.Y = 0.5f;
-                    this.position.Y += v;
-                }
-            }
-        }
-    }
 
     bool attackBlock(Vector2i at, bool wall) {
         chunkAtScreen = at.tilePosToChunkPos;
@@ -152,32 +86,115 @@ private:
         return actionTimer == 0;
     }
 
-
-
     /++
         UPDATE HANDLER FUNCTIONS
     +/
 
     void handleMovement() {
         if (state.IsKeyDown(Keys.A)) {
-            this.motion.X -= PLAYER_SPEED;
+            this.momentum.X -= PLAYER_SPEED;
             spriteFlip = SpriteFlip.FlipVertical;
         }
 
         if (state.IsKeyDown(Keys.D)) {
-            this.motion.X += PLAYER_SPEED;
+            this.momentum.X += PLAYER_SPEED;
             spriteFlip = SpriteFlip.None;
         }
 
-        this.motion.X *= DRAG_CONST;
+        if (state.IsKeyDown(Keys.W)) {
+            this.momentum.Y -= PLAYER_SPEED;
+        }
+
+        if (state.IsKeyDown(Keys.S)) {
+            this.momentum.Y += PLAYER_SPEED;
+        }
+
+        this.momentum.X *= DRAG_CONST;
+        this.momentum.Y *= DRAG_CONST;
 
         if (state.IsKeyDown(Keys.Space) && grounded) {
             if (jumpTimer <= 0) {
+                Logger.Info("JUMP!");
                 jumpTimer = JUMP_TIMER_START;
             }
         }
 
         handlePhysics();
+    }
+
+
+    void handlePhysics() {
+        if (jumpTimer <= 0) {
+            this.momentum.Y += GRAVITY_CONST;
+        } else {
+            this.momentum.Y -= Mathf.Lerp(0, PLAYER_JUMP_SPEED, (1f-(jumpTimer/JUMP_TIMER_START)));
+            if (!state.IsKeyDown(Keys.Space) && jumpTimer <= JUMP_TIMER_START/2) jumpTimer = 0;
+            jumpTimer--;
+        }
+        this.limitMomentum(MAX_SPEED);
+
+        handleCollissionX();
+        handleCollissionY();
+    }
+
+    /// Collission and response on X axis
+    void handleCollissionX() {
+        scope(exit) this.updateHitbox();
+
+        // Iterate through precision of collission
+        foreach(i; 0..PLAYER_COL_PRECISION) {
+
+            float mx = (momentum.X/PLAYER_COL_PRECISION);
+
+            // Temporary position based on momentum derived from precision
+            this.position.X += mx;
+            this.updateHitbox();
+
+            int tries = 0;
+            Vector2 t = collidesRect(world, this, hitbox, Vector2(mx, 0));
+            while(t.X != 0) {
+                this.position.X += t.X;
+                this.momentum.X = 0;
+                this.updateHitbox();
+                if (tries > TILE_SIZE) break;
+
+                // Next cycle
+                t = collidesRect(world, this, hitbox, Vector2(mx, 0));
+                tries++;
+            }
+        }
+    }
+
+        /// Collission and response on X axis
+    void handleCollissionY() {
+        scope(exit) this.updateHitbox();
+
+        grounded = false;
+
+        // Iterate through precision of collission
+        foreach(i; 0..PLAYER_COL_PRECISION) {
+
+            // Temporary position based on momentum derived from precision
+            float my = (momentum.Y/PLAYER_COL_PRECISION);
+            this.position.Y += my;
+            this.updateHitbox();
+
+            int tries = 0;
+            Vector2 t = collidesRect(world, this, hitbox, Vector2(0, my), 8);
+            while(t.Y != 0) {
+                this.position.Y += t.Y;
+                if (momentum.Y > 0) {
+                    grounded = true;
+                }
+                this.momentum.Y = 0;
+                this.updateHitbox();
+                if (tries > TILE_SIZE) break;
+
+                // Next cycle
+                t = collidesRect(world, this, hitbox, Vector2(0, my), 8);
+                tries++;
+            }
+        }
     }
 
     void handleInteraction() {
@@ -243,16 +260,16 @@ private:
 
     void handleMusic() {
         import config;
-        if (hitbox.Center.toTilePos.Y > H_HEIGHT_LIMIT) {
-            MusicManager.play("underground");
-        } else {
-            MusicManager.play("day");
-        }
+        // if (hitbox.Center.toTilePos.Y > H_HEIGHT_LIMIT) {
+        //     MusicManager.play("underground");
+        // } else {
+        //     MusicManager.play("day");
+        // }
     }
 
 public:
     this(World world) {
-        super(world, Vector2(0f, 0f));
+        super(world, Vector2(0f, 0f), new Rectangle(8, 8, 16, 64-8));
         inventory = new Container!(10, 6)();
         inventory[1, 0] = new ItemStack(new ItemTile()("sandstone"), 999);
         inventory[2, 0] = new ItemStack(new ItemTile()("sand"), 999);
@@ -261,15 +278,11 @@ public:
         inventory[5, 0] = new ItemStack(new ItemTile()("cactusplatform"), 999);
     }
 
-    override Rectangle hitbox() {
-        return new Rectangle(cast(int)position.X+8, cast(int)position.Y+8, 16, 64-8);
-    }
-
     Rectangle renderbox() {
         return new Rectangle(cast(int)position.X, cast(int)position.Y, 32, 64);
     }
 
-    override void update(GameTimes gameTime) {
+    override void onUpdate(GameTimes gameTime) {
         state = Keyboard.GetState();
         mouseState = Mouse.GetState();
         if (actionTimer > 0) {
@@ -290,8 +303,12 @@ public:
         }
     }
 
-    override void draw(SpriteBatch spriteBatch) {
+    override void onDraw(SpriteBatch spriteBatch) {
+        spriteBatch.Draw(TEXTURES["tiles/tile_sand"], this.renderbox, TEXTURES["tiles/tile_sand"].Size, Color.Yellow);
+        spriteBatch.Draw(TEXTURES["tiles/tile_sand"], this.hitbox.Displace(cast(int)momentum.X, cast(int)momentum.Y), TEXTURES["tiles/tile_sand"].Size, Color.Red);
+        spriteBatch.Draw(TEXTURES["tiles/tile_sand"], this.hitbox, TEXTURES["tiles/tile_sand"].Size, Color.Blue);
         spriteBatch.Draw(TEXTURES["entities/entity_player"], this.renderbox, TEXTURES["entities/entity_player"].Size, Color.White, spriteFlip);
+        spriteBatch.Draw(TEXTURES["tiles/tile_coal"], new Rectangle(cast(int)this.feet.X-4, cast(int)this.feet.Y-4, 8, 8), TEXTURES["tiles/tile_coal"].Size, Color.Red);
     }
 
     void renderInvCircle(SpriteBatch spriteBatch, Rectangle rect, int i) {
@@ -320,7 +337,7 @@ public:
 
                 spriteBatch.DrawString(FONTS["fonts/UIFontB"], name, basePos, Color.White, 1f);
                 foreach(offset, line; desc.split('\n')) {
-                    spriteBatch.DrawString(FONTS["fonts/UIFont"], line, Vector2(basePos.X, basePos.Y+(measure.Y*(offset+2))), Color.White, 1f);
+                    spriteBatch.DrawString(FONTS["fonts/UIFont"], line, Vector2(basePos.X, basePos.Y+(measure.Y*((offset*2)+2))), Color.White, 1f);
                 }
             }
         }

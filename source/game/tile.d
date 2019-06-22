@@ -59,6 +59,9 @@ private:
     @nonPacked
     string description;
 
+    @nonPacked
+    string[string] stats;
+
     Rectangle getBreakAnimStep() {
         float percentage = 0f;
         if (maxHealth > 0) {
@@ -122,6 +125,10 @@ protected:
     +/
     final void setLightEmission(float amount) {
         this.lightEmission = amount;
+    }
+
+    final void setStat(string name, string statText) {
+        this.stats[name] = statText;
     }
 
     /++
@@ -223,7 +230,7 @@ public:
         return collidable;
     }
 
-    bool isCollidableWith(Entity e) {
+    bool isCollidableWith(Entity e, Vector2 targetPosition) {
         return true;
     }
 
@@ -253,6 +260,10 @@ public:
 
     final string getWallTextureName() {
         return this.wallTexture;
+    }
+
+    final ref string[string] getStats() {
+        return stats;
     }
 
     final void draw(SpriteBatch spriteBatch) {
@@ -429,8 +440,8 @@ Rectangle getDefaultHB(Vector2i worldPosition) {
     return new Rectangle(
         worldPosition.X+TILE_HB_SHRINK, 
         worldPosition.Y+TILE_HB_SHRINK, 
-        TILE_SIZE-(TILE_HB_SHRINK*2), 
-        TILE_SIZE-(TILE_HB_SHRINK*2));
+        (TILE_SIZE+1)-(TILE_HB_SHRINK*2), 
+        (TILE_SIZE+1)-(TILE_HB_SHRINK*2));
 }
 
 void handlePackingTile(T)(ref Packer packer, ref T tile) {

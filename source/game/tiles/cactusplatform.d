@@ -18,7 +18,7 @@ public:
         return !wall;
     }
 
-    override bool isCollidableWith(Entity e) {
-        return (e.motion.Y > 0 && e.feet.Y < hitbox.Center.Y && Keyboard.GetState().IsKeyUp(Keys.S));
+    override bool isCollidableWith(Entity e, Vector2 targetVelocity) {
+        return (targetVelocity.X == 0 && targetVelocity.Y > 0) && (e.feet.Y < hitbox.Y+3) && Keyboard.GetState().IsKeyUp(Keys.S);
     }
 }

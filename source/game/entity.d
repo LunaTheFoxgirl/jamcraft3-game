@@ -3,6 +3,9 @@ public import game.world;
 public import game.tile;
 public import game.chunk;
 public import engine.cman;
+public import game.physics.coll;
+import game.physics.phys;
+import game.utils;
 import config;
 import polyplex;
 
@@ -11,27 +14,20 @@ import polyplex;
 
     Entities are dynamic things in the world which can change position.
 +/
-class Entity {
+class Entity : PhysicsObject {
 protected:
     World world;
+    void onUpdate(GameTimes gameTime) {}
+    void onDraw(SpriteBatch spriteBatch) {}
 
 public:
     /++
         Constructs a new entity.
     +/
-    this(World world, Vector2 position) {
+    this(World world, Vector2 position, Rectangle hitbox) {
         this.world = world;
         this.position = position;
-    }
-
-    Vector2 position = Vector2(0f, 0f);
-    Vector2 motion = Vector2(0f, 0f);
-
-    Vector2 feet() {
-        return Vector2(
-            this.hitbox.Center.X,
-            cast(float)this.hitbox.Bottom-0.5f
-        );
+        super(Vector2(hitbox.X, hitbox.Y), Vector2(hitbox.Width, hitbox.Height));
     }
 
     Vector2i tilePosition() {
@@ -42,9 +38,14 @@ public:
         return tilePosition/CHUNK_SIZE;
     }
 
-    abstract Rectangle hitbox();
-    abstract void update(GameTimes gameTime);
-    abstract void draw(SpriteBatch spriteBatch);
+    final void update(GameTimes gameTime) {
+        updateHitbox();
+        onUpdate(gameTime);
+    }
+
+    final void draw(SpriteBatch spriteBatch) {
+        onDraw(spriteBatch);
+    }
 
     void drawAfter(SpriteBatch spriteBatch) {
         

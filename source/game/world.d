@@ -162,7 +162,6 @@ public:
 
             Rectangle efView = effectiveViewportRenderbounds;
             foreach(chunk; getChunks) {
-                if (chunk.getHitbox is null) continue;
                 if (!chunk.getHitbox.Intersects(efView)) continue; 
                 chunk.drawWalls(spriteBatch, efView);
             }
@@ -174,7 +173,6 @@ public:
             }
 
             foreach(chunk; getChunks) {
-                if (chunk.getHitbox is null) continue;
                 if (!chunk.getHitbox.Intersects(efView)) continue; 
                 chunk.draw(spriteBatch, efView);
             }

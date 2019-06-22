@@ -62,6 +62,7 @@ private:
                     
                 if (this.hasChunkAt(actualPosition)) continue;
                 getChunks[actualPosition] = loadChunk(actualPosition);
+                getChunks[actualPosition].init();
                 //lighting.notifyUpdate(actualPosition);
             }
         }

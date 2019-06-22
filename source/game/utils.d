@@ -89,33 +89,11 @@ T[] getAdjacentEx(T)(T pos, int sx, int sy) if (IsVector!T) {
     return adjacent;
 }
 
+float intervalOf(float value, size_t split) {
+    return value/cast(float)split;
+}
+
 bool withinChunkBounds(Vector2i pos) {
     return (pos.X >= 0 && pos.X <= CHUNK_SIZE &&
             pos.Y >= 0 && pos.Y <= CHUNK_SIZE);
-}
-
-/++
-    Calcuate AABB collissions on the X axis.
-+/
-float calculateAABBCollissionX(Rectangle a, Rectangle b) {
-    if (a.Intersects(b) || b.Intersects(a)) {
-        if (a.Center.X < b.Center.X) {
-            return cast(float)(b.Left-a.Right);
-        }
-        return cast(float)(b.Right-a.Left);
-    }
-    return 0.0f;
-}
-
-/++
-    Calculate AABB collissions on the Y axis.
-+/
-float calculateAABBCollissionY(Rectangle a, Rectangle b) {
-    if (a.Intersects(b) || b.Intersects(a)) {
-        if (a.Center.Y < b.Center.Y) {
-            return cast(float)(b.Top-a.Bottom)/4f;
-        }
-        return cast(float)(b.Bottom-a.Top);
-    }
-    return 0.0f;
 }

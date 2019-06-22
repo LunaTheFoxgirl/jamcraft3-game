@@ -45,8 +45,11 @@ enum HARDSAND_START = 64;
 +/
 
 enum PLAYER_SPEED = 1.8f;
-enum PLAYER_JUMP_SPEED = .8f;
+enum PLAYER_JUMP_SPEED = 1.9f;
 enum GRAVITY_CONST = 1.5f;
 enum MAX_SPEED = 14f;
 enum DRAG_CONST = 0.7f;
-enum JUMP_TIMER_START = 14;
+enum JUMP_TIMER_START = 18;
+
+
+enum PLAYER_COL_PRECISION = 25;

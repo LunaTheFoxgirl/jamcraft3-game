@@ -33,7 +33,7 @@ public:
         hitbox = new Rectangle(position.X*CHUNK_SIZE_PIXELS, position.Y*CHUNK_SIZE_PIXELS, CHUNK_SIZE_PIXELS, CHUNK_SIZE_PIXELS);
     }
 
-    Rectangle getHitbox() {
+    ref Rectangle getHitbox() {
         return hitbox;
     }
 
@@ -169,10 +169,11 @@ public:
         this.modified = true;
     }
 
+    void init() {
+        updateHitbox();
+    }
+
     void update() {
-        if (hitbox is null) {
-            updateHitbox();
-        }
     }
 
     void save() {
