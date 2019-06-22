@@ -12,6 +12,7 @@ public import game.tiles.coaltile;
 public import game.tiles.cactusplatform;
 public import game.tiles.cactusbase;
 public import game.tiles.cactus;
+public import game.tiles.glass;
 
 __gshared static Registry!Tile TileRegistry;
 
@@ -37,4 +38,5 @@ void initTileRegistry() {
     registerTile!CactusPlatformTile();
     registerTile!CactusBaseTile();
     registerTile!CactusTile();
+    registerTile!GlassTile();
 }

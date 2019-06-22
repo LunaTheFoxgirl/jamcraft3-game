@@ -8,6 +8,7 @@ import game.chunk;
 import game.world;
 import engine.music;
 import std.format;
+import game.container;
 
 private __gshared static DunesGame gameImpl;
 
@@ -27,7 +28,7 @@ public:
         Window.AllowResizing = true;
         Window.Title = "Dunes";
         gameImpl = this;
-        this.CountFPS = true;
+        //this.CountFPS = true;
         this.ShowCursor = false;
     }
 
@@ -41,12 +42,12 @@ public:
         initTileRegistry();
         initItemRegistry();
 
+        registerTileIOFor!Tile();
+        registerContainerIO();
+        registerChunkIO();
+
         WORLD = new World();
         WORLD.init();
-
-
-        registerTileIOFor!Tile();
-        registerChunkIO();
 
         font = Content.Load!SpriteFont("fonts/UIFont");
         msCounterPos = Vector2(font.MeasureString("XX ms").X, 4);
@@ -74,12 +75,12 @@ public:
             TEXTURES["ui/ui_cursor"].Size, 
             Color.White);
 
-        sprite_batch.DrawString(
-            font, 
-            "%dms".format(cast(int)this.Frametime()), 
-            Vector2(Game.Window.ClientBounds.Width-msCounterPos.X, msCounterPos.Y), 
-            Color.White, 
-            1f);
+        // sprite_batch.DrawString(
+        //     font, 
+        //     "%dms".format(cast(int)gameTime.DeltaTime.Milliseconds*1000), 
+        //     Vector2(Game.Window.ClientBounds.Width-msCounterPos.X, msCounterPos.Y), 
+        //     Color.White, 
+        //     1f);
         sprite_batch.End();
     }
 

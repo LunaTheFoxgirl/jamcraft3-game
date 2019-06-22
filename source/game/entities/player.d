@@ -26,8 +26,8 @@ private:
     /++
         INVENTORY
     +/
-    Container!(10, 6) inventory;
-    int selectedSlot = 1;
+    Container inventory;
+    int selectedSlot = 0;
 
 
     /++
@@ -225,16 +225,16 @@ private:
         }
 
         // Number keys for switching hotbar slot.
-        if (state.IsKeyDown(Keys.Zero))  selectedSlot = 0;
-        if (state.IsKeyDown(Keys.One))   selectedSlot = 1;
-        if (state.IsKeyDown(Keys.Two))   selectedSlot = 2;
-        if (state.IsKeyDown(Keys.Three)) selectedSlot = 3;
-        if (state.IsKeyDown(Keys.Four))  selectedSlot = 4;
-        if (state.IsKeyDown(Keys.Five))  selectedSlot = 5;
-        if (state.IsKeyDown(Keys.Six))   selectedSlot = 6;
-        if (state.IsKeyDown(Keys.Seven)) selectedSlot = 7;
-        if (state.IsKeyDown(Keys.Eight)) selectedSlot = 8;
-        if (state.IsKeyDown(Keys.Nine))  selectedSlot = 9;
+        if (state.IsKeyDown(Keys.One))   selectedSlot = 0;
+        if (state.IsKeyDown(Keys.Two))   selectedSlot = 1;
+        if (state.IsKeyDown(Keys.Three)) selectedSlot = 2;
+        if (state.IsKeyDown(Keys.Four))  selectedSlot = 3;
+        if (state.IsKeyDown(Keys.Five))  selectedSlot = 4;
+        if (state.IsKeyDown(Keys.Six))   selectedSlot = 5;
+        if (state.IsKeyDown(Keys.Seven)) selectedSlot = 6;
+        if (state.IsKeyDown(Keys.Eight)) selectedSlot = 7;
+        if (state.IsKeyDown(Keys.Nine))  selectedSlot = 8;
+        if (state.IsKeyDown(Keys.Zero))  selectedSlot = 9;
 
         // Using items requires them to be in your arm's reach.
         if (!withinReach(tileAtScreen)) return;
@@ -264,12 +264,13 @@ private:
 public:
     this(World world) {
         super(world, Vector2(0f, 0f), new Rectangle(8, 8, 16, 64-8));
-        inventory = new Container!(10, 6)();
-        inventory[0, 0] = new ItemStack(new ItemTile()("sandstone"), 999);
-        inventory[1, 0] = new ItemStack(new ItemTile()("sand"), 999);
-        inventory[2, 0] = new ItemStack(new ItemTile()("cactus"), 999);
-        inventory[3, 0] = new ItemStack(new ItemTile()("cactusbase"), 8);
-        inventory[4, 0] = new ItemStack(new ItemTile()("cactusplatform"), 999);
+        inventory = new Container(10, 6);
+        // inventory[0, 0] = new ItemStack(new ItemTile()("sandstone"), 999);
+        // inventory[1, 0] = new ItemStack(new ItemTile()("sand"), 999);
+        // inventory[2, 0] = new ItemStack(new ItemTile()("cactus"), 999);
+        // inventory[3, 0] = new ItemStack(new ItemTile()("cactusbase"), 8);
+        // inventory[4, 0] = new ItemStack(new ItemTile()("cactusplatform"), 999);
+        // inventory[5, 0] = new ItemStack(new ItemTile()("glass"), 999);
     }
 
     Rectangle renderbox() {
@@ -335,7 +336,7 @@ public:
 
     override void drawAfter(SpriteBatch spriteBatch) {
         int offset = 16;
-        foreach(ix; 1..11) {
+        foreach(ix; 0..10) {
             // Little sneaky trick to render slot 0 last.
             int i = ix%10;
             if (i == selectedSlot) {
@@ -348,7 +349,17 @@ public:
         //spriteBatch.Draw(TEXTURES["tiles/tile_sand"], new Rectangle(tileAtScreen.X*BLOCK_SIZE, tileAtScreen.Y*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE), TEXTURES["tiles/tile_sand"].Size, Color.Blue);
     }
 
-    final ref Container!(10, 6) getInventory() {
+    /++
+        Returns the player's inventory.
+    +/
+    final ref Container getInventory() {
         return inventory;
+    }
+
+    /++
+        Used on world load to set the player's inventory.
+    +/
+    final void setInventory(Container container) {
+        inventory = container;
     }
 }

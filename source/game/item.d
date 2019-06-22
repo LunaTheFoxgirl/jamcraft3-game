@@ -88,9 +88,13 @@ public:
         this.id = id;
     }
     
-    final string getId() {
+    final string getFullId() {
         if (subId !is null) return id~":"~subId;
         else return id;
+    }
+    
+    final string getId() {
+        return id;
     }
 
     final string getSubId() {

@@ -1,29 +1,41 @@
 module game.container;
 import game.itemstack;
 import game.item;
+import msgpack;
+import polyplex;
 
 /++
     A container is a storage of ItemStacks.
 +/
-class Container(int _slotsX, int _slotsY) {
+class Container {
 private:
-    ItemStack[_slotsX][_slotsY] slots;
+    ItemStack[][] slots;
 
 public:
     /// Amount of slots on the X axis
-    const int slotsX = _slotsX;
+    @nonPacked
+    immutable size_t slotsX;
 
     /// Amount of slots on the Y axis
-    const int slotsY = _slotsY;
+    @nonPacked
+    immutable size_t slotsY;
 
     /// Amount of slots in total
-    const int slotsTotal = _slotsX*_slotsY;
+    @nonPacked
+    immutable size_t slotsTotal;
+
+    this(size_t sizeX, size_t sizeY) {
+        slots = new ItemStack[][](sizeX, sizeY);
+        slotsX = sizeX;
+        slotsY = sizeY;
+        slotsTotal = slotsX*slotsY;
+    }
 
     /++
         Index the container.
     +/
-    ref ItemStack opIndex(uint x, uint y) {
-        return slots[y][x];
+    ref ItemStack opIndex(size_t x, size_t y) {
+        return slots[x][y];
     }
 
     /++
@@ -93,4 +105,60 @@ public:
             }
         }
     }
+}
+
+void handlePackingContainer(ref Packer packer, ref Container container) {
+    packer.beginMap(2);
+    packer.pack("size");
+    packer.packArray(container.slotsX, container.slotsY);
+
+    packer.pack("contents");
+    packer.beginArray(container.slotsX*container.slotsY);
+    foreach(y; 0..container.slotsY) {
+        foreach(x; 0..container.slotsX) {
+            if (container[x, y] is null) {
+                packer.pack(null);
+                continue;
+            }
+            Item item = container[x, y].getItem();
+            packer.packArray(item.getId(), item.getSubId(), container[x, y].getCount());
+        }
+    }
+}
+
+void handleUnpackingContainer(ref Unpacker unpacker, ref Container container) {
+    import game.items;
+    import std.stdio;
+    string region;
+    unpacker.beginMap();
+    unpacker.unpack(region);
+
+    size_t sizeX;
+    size_t sizeY;
+    unpacker.unpackArray(sizeX, sizeY);
+    container = new Container(sizeX, sizeY);
+
+    unpacker.unpack(region);
+    size_t arraySize = unpacker.beginArray();
+    foreach(y; 0..sizeY) {
+        foreach(x; 0..sizeX) {
+            size_t size = unpacker.beginArray();
+            if (size == 0) continue;
+
+            string id;
+            string subId;
+            int count;
+            unpacker.unpack(id);
+            unpacker.unpack(subId);
+            unpacker.unpack(count);
+
+            Item item = ItemRegistry.createItem(id, subId);
+            container[x, y] = new ItemStack(item, count);
+        }
+    }
+}
+
+void registerContainerIO() {
+    registerPackHandler!(Container, handlePackingContainer);
+    registerUnpackHandler!(Container, handleUnpackingContainer);
 }

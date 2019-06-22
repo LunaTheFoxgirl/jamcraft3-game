@@ -11,6 +11,7 @@ import containers.list;
 import msgpack;
 import config;
 import game.chunkprov;
+import game.container;
 
 __gshared World WORLD;
 
@@ -53,6 +54,7 @@ private:
         WorldSv ch = unpack!WorldSv(cast(ubyte[])read(path));
         
         player.position = ch.playerPosition;
+        (cast(Player)player).setInventory(ch.playerContainer);
         camera.Zoom = ch.cameraZoom;
     }
 
@@ -62,6 +64,7 @@ private:
 
         WorldSv saveInfo;
         saveInfo.playerPosition = Vector2(Mathf.Floor(player.position.X), Mathf.Floor(player.position.Y)-8f);
+        saveInfo.playerContainer = (cast(Player)player).getInventory();
         saveInfo.cameraZoom = camera.Zoom;
 
         if (!exists("world/")) mkdir("world/");
@@ -202,4 +205,5 @@ public:
 struct WorldSv {
     Vector2 playerPosition;
     float cameraZoom;
+    Container playerContainer;
 }
