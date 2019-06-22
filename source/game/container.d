@@ -62,6 +62,24 @@ public:
         return oldStack;
     }
 
+    ItemStack fitIn(ItemStack stack) {
+        foreach(y; 0..slotsY) {
+            foreach(x; 0..slotsX) {
+                if (this[x, y] is null) {
+                    this[x, y] = stack;
+                    return null;
+                }
+                if (this[x, y].sharesType(stack)) {
+                    if (this[x, y].getCount() < this[x, y].getItem().getMaxStack()) {
+                        this[x, y].combineStack(stack);
+                        return null;
+                    }
+                }
+            }
+        }
+        return stack;
+    }
+
     /++
         Update the container (by removing any empty item stacks)
     +/

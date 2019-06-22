@@ -23,8 +23,7 @@ public:
         Vector2i inWorld = getWorldPosition();
 
         if (WORLD.tileAt(Vector2i(inWorld.X, inWorld.Y+1)) is null) {
-            Logger.Info("Breaking cacti!");
-            this.breakTile();
+            this.breakTile(WORLD.getPlayer());
         }
     }
 }

@@ -83,15 +83,15 @@ public:
         return false;
     }
 
-    bool attackTile(Vector2i at, int digPower, bool wall) {
+    bool attackTile(Entity from, Vector2i at, int digPower, bool wall) {
         if (!wall) {
             if (this.tiles[at.X][at.Y] !is null) {
-                this.tiles[at.X][at.Y].attackTile(digPower, wall);
+                this.tiles[at.X][at.Y].attackTile(from, digPower, wall);
                 return true;
             }
         } else {
             if (this.walls[at.X][at.Y] !is null) {
-                this.walls[at.X][at.Y].attackTile(digPower, wall);
+                this.walls[at.X][at.Y].attackTile(from, digPower, wall);
                 return true;
             }
         }

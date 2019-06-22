@@ -73,7 +73,7 @@ private:
 
         Vector2i tilePos = Vector2i(cast(int)mBlockPos.X, cast(int)mBlockPos.Y);
         if (chunk !is null) {
-            return chunk.attackTile(tilePos, stats.pickPower, wall);
+            return chunk.attackTile(this, tilePos, stats.pickPower, wall);
         }
         return false;
     }
@@ -122,7 +122,7 @@ private:
         else {
             this.momentum.Y *= DRAG_CONST;
             this.momentum.Y -= Mathf.Lerp(0, PLAYER_JUMP_SPEED, (1f-(jumpTimer/JUMP_TIMER_START)));
-            if (!state.IsKeyDown(Keys.Space) && jumpTimer <= JUMP_TIMER_START/2) jumpTimer = 0;
+            if (!state.IsKeyDown(Keys.Space) && jumpTimer <= JUMP_TIMER_START/1.2) jumpTimer = 0;
             jumpTimer--;
         }
         this.limitMomentum(MAX_SPEED);
@@ -265,11 +265,11 @@ public:
     this(World world) {
         super(world, Vector2(0f, 0f), new Rectangle(8, 8, 16, 64-8));
         inventory = new Container!(10, 6)();
-        inventory[1, 0] = new ItemStack(new ItemTile()("sandstone"), 999);
-        inventory[2, 0] = new ItemStack(new ItemTile()("sand"), 999);
-        inventory[3, 0] = new ItemStack(new ItemTile()("cactus"), 999);
-        inventory[4, 0] = new ItemStack(new ItemTile()("cactusbase"), 1);
-        inventory[5, 0] = new ItemStack(new ItemTile()("cactusplatform"), 999);
+        inventory[0, 0] = new ItemStack(new ItemTile()("sandstone"), 999);
+        inventory[1, 0] = new ItemStack(new ItemTile()("sand"), 999);
+        inventory[2, 0] = new ItemStack(new ItemTile()("cactus"), 999);
+        inventory[3, 0] = new ItemStack(new ItemTile()("cactusbase"), 8);
+        inventory[4, 0] = new ItemStack(new ItemTile()("cactusplatform"), 999);
     }
 
     Rectangle renderbox() {
@@ -346,5 +346,9 @@ public:
             offset += 64;
         }
         //spriteBatch.Draw(TEXTURES["tiles/tile_sand"], new Rectangle(tileAtScreen.X*BLOCK_SIZE, tileAtScreen.Y*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE), TEXTURES["tiles/tile_sand"].Size, Color.Blue);
+    }
+
+    final ref Container!(10, 6) getInventory() {
+        return inventory;
     }
 }

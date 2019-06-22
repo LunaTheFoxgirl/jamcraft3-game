@@ -192,7 +192,15 @@ protected:
             true if an action has been done.
             false if no action has been done.
     +/
-    bool onDestroy() {
+    bool onDestroy(Entity from) {
+        import game.entities.player;
+        import game.container;
+        import game.items.itemtile;
+        import game.itemstack;
+        if (auto player = cast(Player)from) {
+            auto inventory = player.getInventory();
+            inventory.fitIn(new ItemStack(new ItemTile()(this.tileId), 1));
+        }
         return false;
     }
 
@@ -327,7 +335,7 @@ public:
     /++
         Attacks the tile, dealing damage to it if you have enough dig power.
     +/
-    final void attackTile(int digPower, bool wall = false) {
+    final void attackTile(Entity from, int digPower, bool wall = false) {
         // If the strength is less than 0, it's indestructible.
         if (strength < 0) return;
 
@@ -339,15 +347,15 @@ public:
 
         // Decrease health.
         health -= digPower;
-        if (health <= 0) breakTile();
+        if (health <= 0) breakTile(from);
     }
 
     /++
         Instantly breaks the tile
     +/
-    final void breakTile() {
+    final void breakTile(Entity from = null) {
         scope (exit) updateSurrounding(position);
-        this.onDestroy();
+        this.onDestroy(from);
         chunk.modified = true;
         // TODO: update shadow mapping.
         chunk.updateLighting(1);

@@ -47,7 +47,7 @@ public:
         int fCount = this.count+count;
         int leftovers = fCount-item.getMaxStack();
         if (fCount > item.getMaxStack()) fCount = item.getMaxStack();
-        this.count = fCount > item.getMaxStack() ? fCount : item.getMaxStack();
+        this.count = fCount <= item.getMaxStack() ? fCount : item.getMaxStack();
         return leftovers;
     }
 
