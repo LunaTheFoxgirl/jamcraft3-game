@@ -40,4 +40,5 @@ void initTileRegistry() {
     registerTile!CactusBaseTile();
     registerTile!CactusTile();
     registerTile!GlassTile();
+    registerTile!TallCactusTile();
 }

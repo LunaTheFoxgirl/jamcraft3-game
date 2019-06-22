@@ -65,7 +65,7 @@ private:
         UTILITY
     +/
 
-    bool attackBlock(Vector2i at, bool wall) {
+    bool attackTile(Vector2i at, bool wall) {
         chunkAtScreen = at.tilePosToChunkPos;
         Chunk chunk = world[chunkAtScreen.X, chunkAtScreen.Y];
         Vector2i mBlockPos = at.wrapTilePos;
@@ -246,7 +246,7 @@ private:
                         actionTimer = inventory[selectedSlot, 0].getItem().getUseTime();
                     }
                 } else {
-                    attackBlock(tileAtScreen, alt);
+                    attackTile(tileAtScreen, alt);
                     actionTimer = stats.swingSpeedBreak;
                 }
             }

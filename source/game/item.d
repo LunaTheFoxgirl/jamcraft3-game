@@ -31,7 +31,7 @@ private:
     string description = "A fancy description goes here!";
 
     @nonPacked
-    int useTime = 25;
+    int useTime = 35;
 
     Texture2D getTexture() {
         return TEXTURES["items/item_"~texture];

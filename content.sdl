@@ -10,6 +10,12 @@ path:output "content/"
 // Input folder (where your raw content (.png, .mp3, etc.) should be)
 path:input "raw/"
 
+recipe name="Items" {
+    texture "items/item_cactus.png" type="png"
+    texture "items/item_coal.png" type="png"
+    texture "items/item_copperbar.png" type="png"
+}
+
 recipe name="Tiles" {
     texture "tiles/tile_sand.png" type="png" 
     texture "tiles/tile_sandstone.png" type="png" 
@@ -18,6 +24,7 @@ recipe name="Tiles" {
     texture "tiles/tile_cactus.png" type="png" 
     texture "tiles/tile_cactusplatform.png" type="png" 
     texture "tiles/tile_cactuscraftingbench.png" type="png" 
+    texture "tiles/tile_cactuslong.png" type="png" 
     texture "tiles/tile_glass.png" type="png" 
 }
 

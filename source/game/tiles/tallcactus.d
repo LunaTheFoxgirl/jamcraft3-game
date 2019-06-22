@@ -42,4 +42,12 @@ public:
                 getTexture().Height), 
             wall ? BGColor : FGColor);
     }
+
+    override void onUpdate() {
+        Vector2i inWorld = getWorldPosition();
+
+        if (WORLD.tileAt(Vector2i(inWorld.X, inWorld.Y+1)) is null) {
+            this.breakTile(WORLD.getPlayer());
+        }
+    }
 }
